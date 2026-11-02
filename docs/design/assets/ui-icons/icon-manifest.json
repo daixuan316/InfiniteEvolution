@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "libraryId": "infinite-evolution-ui-icons-v1",
+  "generatedAt": "2026-11-03",
+  "sourceTool": "Codex built-in image generation",
+  "styleReference": "../ui-main-gameplay-topdown-v1.png",
+  "format": {
+    "individualWidth": 128,
+    "individualHeight": 128,
+    "colorMode": "RGBA",
+    "transparent": true,
+    "gridColumns": 4,
+    "gridRows": 4,
+    "ordering": "row-major"
+  },
+  "groups": [
+    {
+      "id": "hud-combat",
+      "sourceSheet": "source-sheets/01-hud-combat.png",
+      "icons": ["health", "shield", "injury", "pollution", "day-timer", "minimap", "ark-return", "dodge", "active-skill", "grenade", "interact", "weapon-swap", "emergency-power", "repair-drone", "lock-on", "weak-point"]
+    },
+    {
+      "id": "system-nav",
+      "sourceSheet": "source-sheets/02-system-nav.png",
+      "icons": ["map", "layout", "workshop", "research", "crew", "storage", "mission", "codex", "settings", "pause", "resume", "save", "exit", "confirm", "cancel", "lock"]
+    },
+    {
+      "id": "resources-items",
+      "sourceSheet": "source-sheets/03-resources-items.png",
+      "icons": ["scrap", "alloy", "electronics", "energy-cell", "fuel", "food", "medicine", "blueprint", "mutation-core", "bio-organ", "weapon", "armor", "helmet", "boots", "backpack", "loot-crate"]
+    },
+    {
+      "id": "enemies-status",
+      "sourceSheet": "source-sheets/04-enemies-status.png",
+      "icons": ["walker", "runner", "brute", "spitter", "elite", "boss", "nest", "contamination", "corrosion", "power-outage", "overload", "module-damage", "low-armor", "morale", "fatigue", "rescue"]
+    },
+    {
+      "id": "map-actions",
+      "sourceSheet": "source-sheets/05-map-actions.png",
+      "icons": ["hospital", "police-station", "factory", "subway", "supply-drop", "ark", "objective-pin", "safe-route", "high-risk-route", "search", "rescue", "bounty", "acid-rain", "day-night", "wave", "evacuation"]
+    },
+    {
+      "id": "attributes-crafting",
+      "sourceSheet": "source-sheets/06-attributes-crafting.png",
+      "icons": ["damage", "fire-rate", "accuracy", "range", "armor", "speed", "critical", "reload", "power", "noise", "mechanical", "biological", "hybrid", "upgrade", "recycle", "craft"]
+    }
+  ],
+  "provenance": {
+    "sourceType": "ai-generated",
+    "normalization": "deterministic 4x4 slicing and nearest-neighbor resize",
+    "reviewStatus": "internal-ui-validation",
+    "commercialReleaseReviewRequired": true
+  }
+}
