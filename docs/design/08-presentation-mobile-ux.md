@@ -18,6 +18,8 @@
 
 ![主玩法 UI 风格基准](assets/ui-main-gameplay-topdown-v1.png)
 
+完整的玩法与功能模块效果图见 [UI 效果图](12-ui-mockups.md)。
+
 ## 2. UI 信息优先级
 
 ### 一级：立即影响生存
