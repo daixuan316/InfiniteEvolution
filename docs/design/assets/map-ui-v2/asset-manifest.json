@@ -1,0 +1,1703 @@
+{
+  "schemaVersion": "1.0",
+  "libraryId": "infinite-evolution-map-ui-v2",
+  "generatedAt": "2026-11-03",
+  "sourceTool": "Codex built-in image generation (image_gen.imagegen)",
+  "pathBase": "All asset path, originalPath and sourcePaths fields are relative to the NewProject repository root. generationHistory.generatedResultPath and absolute referencePaths are archival machine-local provenance, not distributed outputs.",
+  "styleReferences": [
+    "docs/design/assets/ui-mockups/06-world-map-intelligence.png",
+    "docs/design/assets/world-characters-monsters/maps/01-grey-harbor-region-map.png",
+    "docs/design/assets/ui-main-gameplay-topdown-v1.png",
+    "docs/design/assets/ui-mockups/01-day-exploration.png",
+    "docs/design/assets/world-characters-monsters/maps/02-hospital-district-day.png"
+  ],
+  "formats": {
+    "format": "PNG",
+    "sceneSize": [
+      1334,
+      750
+    ],
+    "nodeAndMarkerSize": [
+      128,
+      128
+    ],
+    "routeSize": [
+      1024,
+      128
+    ],
+    "hazardSize": [
+      512,
+      512
+    ],
+    "squareThumbnailSize": [
+      512,
+      512
+    ],
+    "wideThumbnailSize": [
+      512,
+      288
+    ]
+  },
+  "generationHistory": [
+    {
+      "id": "gen-map-hospital",
+      "sourceType": "ai-generated",
+      "tool": "image_gen.imagegen",
+      "prompt": "Production game background for a daytime hospital exploration district in an orthographic high-angle refined 2D pixel-art survival game. Show a readable main road, hospital entrance, ambulance search zone, fenced contamination pocket, purifier station, rescue point, two route branches, indoor entrance, and a clearly reserved ark-return edge. Warm-yellow interactive objects must be visible in the environment without UI markers. No HUD, no text, no icons, no characters, no monsters, no route overlay, no baked collision markings, no isometric view, no side view, no 3D realism. Landscape 16:9 composition intended for deterministic crop to 1334×750.\nReference image 1: existing hospital district, scene and visual style reference. Reference image 2: main gameplay screenshot, use only environment pixel density, camera and edge treatment; exclude all UI and actors. Treat the hospital's architecture as environment, not a diagram. Use unlettered architecture and unmarked props.",
+      "referencePaths": [
+        "docs/design/assets/world-characters-monsters/maps/02-hospital-district-day.png",
+        "docs/design/assets/ui-main-gameplay-topdown-v1.png"
+      ],
+      "inputGenerationIds": [],
+      "generatedResultPath": "C:/Users/dai/.codex/generated_images/01a1a021-868a-7b52-91fd-1a52eacf47d8/exec-5ca119cb-0cfd-4340-a378-bd4ada00bddf.png",
+      "sourcePath": "docs/design/assets/map-ui-v2/source/01-hospital-exploration-map.png",
+      "disposition": "retained-source",
+      "promptReport": "task-1-report.md"
+    },
+    {
+      "id": "gen-map-police",
+      "sourceType": "ai-generated",
+      "tool": "image_gen.imagegen",
+      "prompt": "Production game background matching the approved hospital map’s exact camera, pixel density, palette roles, edge treatment, and lighting. Create a daytime ruined police-station district with a readable main road, fortified station entrance, security gate, keycard terminal, armory wing, evidence courtyard, two route branches, indoor entrance, and ark-return edge. Warm-yellow interactive props must read without UI markers. No HUD, text, icons, characters, monsters, route overlay, side view, isometric view, or 3D realism. Landscape 16:9 composition intended for deterministic crop to 1334×750.\nReference image 1: approved hospital map, lock orthographic high-angle camera, environment style and road scale. Reference image 2: main gameplay screenshot, environment style reference only; exclude all HUD and actors. Use unlettered architecture and unmarked props. The new station, armory and evidence courtyard must have distinct physical silhouettes.",
+      "referencePaths": [
+        "docs/design/assets/map-ui-v2/source/01-hospital-exploration-map.png",
+        "docs/design/assets/ui-main-gameplay-topdown-v1.png"
+      ],
+      "inputGenerationIds": [
+        "gen-map-hospital"
+      ],
+      "generatedResultPath": "C:/Users/dai/.codex/generated_images/01a1a021-868a-7b52-91fd-1a52eacf47d8/exec-b6e210b1-0d16-44f7-bda9-b7dce5a776f4.png",
+      "sourcePath": "docs/design/assets/map-ui-v2/source/02-police-exploration-map.png",
+      "disposition": "retained-source",
+      "promptReport": "task-1-report.md"
+    },
+    {
+      "id": "gen-map-factory",
+      "sourceType": "ai-generated",
+      "tool": "image_gen.imagegen",
+      "prompt": "Production game background matching the approved hospital map’s exact camera, pixel density, palette roles, edge treatment, and lighting. Create a daytime abandoned factory district with a readable service road, production hall entrance, power junction, generator yard, crane control, noisy conveyor area, two route branches, indoor entrance, and ark-return edge. Warm-yellow interactive props must read without UI markers. No HUD, text, icons, characters, monsters, route overlay, side view, isometric view, or 3D realism. Landscape 16:9 composition intended for deterministic crop to 1334×750.\nReference image 1: approved hospital map, lock orthographic high-angle camera, environment style and road scale. Reference image 2: main gameplay screenshot, environment style reference only; exclude all HUD and actors. Use unlettered architecture and unmarked props. The power junction, generator yard, crane console and conveyor machinery must have distinct physical silhouettes.",
+      "referencePaths": [
+        "docs/design/assets/map-ui-v2/source/01-hospital-exploration-map.png",
+        "docs/design/assets/ui-main-gameplay-topdown-v1.png"
+      ],
+      "inputGenerationIds": [
+        "gen-map-hospital"
+      ],
+      "generatedResultPath": "C:/Users/dai/.codex/generated_images/01a1a021-868a-7b52-91fd-1a52eacf47d8/exec-6ab8ff83-e392-4d79-a78e-60a090a740ca.png",
+      "sourcePath": "docs/design/assets/map-ui-v2/source/03-factory-exploration-map.png",
+      "disposition": "retained-source",
+      "promptReport": "task-1-report.md"
+    },
+    {
+      "id": "gen-region-overview",
+      "sourceType": "ai-generated",
+      "tool": "image_gen.imagegen",
+      "prompt": "Use case: ui-mockup. Create one complete high fidelity landscape mobile survival game REGION OVERVIEW screen at 1334×750 intent, 16:9. Input image 1 is the UI shell/style reference; image 2 is the gray harbor map. Reuse its precise refined orthographic pixel-art palette, chunky cyan clipped-corner borders, dark navy panels, yellow actions, magenta contamination, gray city.\nKeep fixed layout: top resource/time strip y0-75; left rail x0-230; center map x235-1010 y85-735; reserved right detail column x1020-1325 y85-735. Map contains only three destination node badges: hospital centered at (590,220), police centered at (450,365), factory centered at (860,245); ark at (330,610). Positions refer to 1334×750. Distinct white hospital cross-building, police shield-building, factory stacks inside cyan default frames. Show thin cyan route connections from ark to all three. Keep harbor map visible. Do not add subway, supply drop or boss node.\nLeft rail compact objectives and filter icons. Top shows day 03, daylight 06:40, metal 180, chips 72, energy 36, backpack 32/40. Right inactive detail column has quiet ghost outlines/selection icon and minimal text \"选择地点\". Its only departure affordance is a single subdued dark yellow disabled button at x1035-1310 y650-725, integrated INSIDE the inactive column, labeled \"确认出发\"; do not place any independent departure control outside panel. No selection yet. No destination thumbnail or active detail data. No joystick, avatar, weapon skills, combat HUD, watermark, isometric camera. Preserve legible large icons, sparse Chinese copy. Make the whole screen clean and readable at native size.",
+      "referencePaths": [
+        "docs/design/assets/ui-mockups/06-world-map-intelligence.png",
+        "docs/design/assets/world-characters-monsters/maps/01-grey-harbor-region-map.png"
+      ],
+      "inputGenerationIds": [],
+      "generatedResultPath": "C:/Users/dai/.codex/generated_images/01a1a03a-157a-7d72-aee7-84491286e16b/exec-aedf7255-22b4-4872-8c55-53dc4117c9f8.png",
+      "sourcePath": "docs/design/assets/map-ui-v2/source/04-region-overview-ui.png",
+      "disposition": "retained-source",
+      "promptReport": "task-2-region-report.md"
+    },
+    {
+      "id": "gen-region-hospital",
+      "sourceType": "ai-generated",
+      "tool": "image_gen.imagegen",
+      "prompt": "Use case: ui-mockup, precise UI state edit. Image 1 is the EDIT TARGET overview. Image 2 is supporting hospital thumbnail only. Produce one hospital-selected state of exactly this complete 16:9 UI, 1334×750 intent.\nLOCK EVERYTHING: top bar, left rail, panel bounding rectangle, map crop, all terrain, all roads, ark position, and all three node centers must remain pixel-aligned to image 1. No panning/zooming or relocating badges. Change only selection styling, recommended route coloration, and right panel contents. Hospital badge grows at its existing center by 12 percent and gets bright yellow border. Other two badges dim but remain readable cyan. From ark trace the existing hospital route in warm yellow; leave other paths dim cyan. Keep pollution zone magenta.\nActivate same fixed right detail column: hospital thumbnail at top, title \"医院\", two danger skulls plus contamination icon, exactly three reward icons (medicine, filter, rescue supplies), separate metric rows \"距离 280m\", \"路途 02:10\", \"探索 06:00\", warning strip with magenta biohazard and text \"污染 · 救援\". Bottom of this SAME column contains one large bright yellow button with exact text \"确认出发\". Preserve button footprint from overview. Use readable sparse typography and large icons, no extraneous text. Medical/pollution/rescue identity. No joystick, avatars, enemies, weapon/skill controls, combat HUD, new nodes, watermark. Preserve all shell positions.",
+      "referencePaths": [
+        "docs/design/assets/map-ui-v2/source/04-region-overview-ui.png",
+        "docs/design/assets/world-characters-monsters/location-thumbnails/wide/01-hospital.png"
+      ],
+      "inputGenerationIds": [
+        "gen-region-overview"
+      ],
+      "generatedResultPath": "C:/Users/dai/.codex/generated_images/01a1a03a-157a-7d72-aee7-84491286e16b/exec-fb03ae4f-b89c-4633-9497-49c3155dd4f6.png",
+      "sourcePath": "docs/design/assets/map-ui-v2/source/05-hospital-selected-ui.png",
+      "disposition": "retained-source",
+      "promptReport": "task-2-region-report.md"
+    },
+    {
+      "id": "gen-region-police",
+      "sourceType": "ai-generated",
+      "tool": "image_gen.imagegen",
+      "prompt": "Use case ui-mockup precise UI state edit. Image 1 is the hospital-selected UI EDIT TARGET, image 2 is the overview for unchanged map and routes, image 3 is supporting police thumbnail. Change selected destination from hospital to POLICE STATION. Preserve absolutely all shell rectangles, top bar, left rail, panel spacing, thumbnail box, metrics rows, warning box and button footprint; preserve terrain and all roads, harbor crop, ark and all THREE node CENTERS. Do not pan, zoom or relocate anything. Same 16:9,1334×750 intent.\nRestore hospital badge to its original smaller cyan default frame and dim it. Factory badge stays dim cyan. Enlarge police badge 12 percent at exactly its existing center, use bright yellow frame. Restore hospital route cyan. Trace the existing ark-to-police path warm yellow, add a short magenta dangerous segment just before the police node; keep all other connections readable dim cyan.\nRight panel same composition as image1: replace hospital thumbnail with police architecture from image3, title \"警局\", three magenta danger skulls and a small armor threat symbol, exactly three reward boxes (ammunition, weapon parts, keycard). Three separate metric rows \"距离 360m\", \"路途 02:50\", \"探索 08:00\". Warning strip magenta lock plus text \"封锁 · 重甲\". Same large yellow button exact text \"确认出发\". Chinese sparse readable text, black letters in yellow button. Weapons, locked armory, armored threat identity. No extra nodes, joystick, avatar, weapon skills, combat HUD, watermark. Keep the precise original map-node centers, terrain and identical UI shell.",
+      "referencePaths": [
+        "docs/design/assets/map-ui-v2/source/05-hospital-selected-ui.png",
+        "docs/design/assets/map-ui-v2/source/04-region-overview-ui.png",
+        "docs/design/assets/world-characters-monsters/location-thumbnails/wide/03-police-station.png"
+      ],
+      "inputGenerationIds": [
+        "gen-region-hospital",
+        "gen-region-overview"
+      ],
+      "generatedResultPath": "C:/Users/dai/.codex/generated_images/01a1a03a-157a-7d72-aee7-84491286e16b/exec-82269e50-5518-4284-a143-b620c06231c4.png",
+      "sourcePath": "docs/design/assets/map-ui-v2/source/06-police-selected-ui.png",
+      "disposition": "retained-source",
+      "promptReport": "task-2-region-report.md"
+    },
+    {
+      "id": "gen-region-factory",
+      "sourceType": "ai-generated",
+      "tool": "image_gen.imagegen",
+      "prompt": "Use case ui-mockup precise UI state edit. Image 1 hospital-selected UI is the EDIT TARGET; image 2 overview locks map and route geometry; image 3 supporting factory thumbnail. Create FACTORY SELECTED state. LOCK all shell borders, left rail, top bar, thumbnail rectangle, panel spacing, three metrics rows, warning strip and action footprint. Preserve exact map crop, all terrain/roads, harbor, ark and all three map NODE CENTERS. No panning/zooming or moving badges. Same complete 16:9 screen at 1334×750 intent.\nRestore hospital to its smaller cyan default badge and dim it. Police also dim cyan. Enlarge FACTORY badge 12 percent centered precisely where its original badge is and outline yellow. Reset hospital route cyan. Trace existing ark-to-factory connection in bright warm yellow, with one short magenta dangerous segment on the eastern approach adjacent to contaminated district. Keep unselected routes readable dim cyan.\nRight panel identical layout: use factory thumbnail from image3; title \"工厂\"; three magenta danger skulls and high-noise speaker symbol. Exactly three reward boxes: metal ingots, circuit board, battery. Separate rows \"距离 520m\", \"路途 04:20\", \"探索 10:00\". Magenta event warning strip power/speaker icon and text \"电力 · 高噪\". Single bright yellow button exact text \"确认出发\", same position and size as target. Machinery, power and high noise identity. Sparse large readable Chinese copy. No new nodes, characters, joystick, weapon/skill controls, combat HUD, watermark. Original interface and map geometry must stay identical.",
+      "referencePaths": [
+        "docs/design/assets/map-ui-v2/source/05-hospital-selected-ui.png",
+        "docs/design/assets/map-ui-v2/source/04-region-overview-ui.png",
+        "docs/design/assets/world-characters-monsters/location-thumbnails/wide/04-factory.png"
+      ],
+      "inputGenerationIds": [
+        "gen-region-hospital",
+        "gen-region-overview"
+      ],
+      "generatedResultPath": "C:/Users/dai/.codex/generated_images/01a1a03a-157a-7d72-aee7-84491286e16b/exec-2e55d162-6744-4d7c-a87a-f6d92898441e.png",
+      "sourcePath": "docs/design/assets/map-ui-v2/source/07-factory-selected-ui.png",
+      "disposition": "retained-source",
+      "promptReport": "task-2-region-report.md"
+    },
+    {
+      "id": "gen-hospital-initial",
+      "sourceType": "ai-generated",
+      "tool": "image_gen.imagegen",
+      "prompt": "Use case: ui-mockup.\nCreate ONE polished complete landscape mobile survival game hospital daytime exploration gameplay screenshot. 16:9, intended display 1334×750. Input image 1 is the approved hospital exploration map: PRESERVE this exact hospital architecture, ambulance bay at left, cyan hospital entrance left of center, purifier tank upper middle, fenced magenta contaminated area upper right, medical rescue tents middle-right, central road branches and open ark-return road at far right. It is the environment/edit target. Input image 2 is the HUD style and layout reference: match its pixel-art outlines, cyan controls and fixed HUD shell precisely, while retaining hospital environment of image 1.\n\nOrthographic high-angle top-down refined 2D pixel art, same camera as input 1, no isometric view. Preserve visible playable road, and add a clearly recognizable small armed survivor on the middle road at about 46% width, 60% height facing right; three small infected enemies approaching from the right with short red health bars, plus a magenta infected threat near contamination fence. Clearly a directly playable combat scene.\n\nHUD position invariants from image 2: top-left stacked red health 420/420, cyan shield 180/180, yellow injury 18/100, magenta pollution 32/100 with matching icons; top-center daylight timer 04:26 sun-to-dusk bar; top-right round cyan minimap containing player arrow, yellow objective diamond, cyan ark/vehicle return icon and dotted navigation direction. Left of minimap compact objective diamond '68 m' and cyan ark/vehicle right-arrow '112 m'. Lower-left large translucent circular movement joystick. Lower-right complete cyan circular control cluster in exactly the reference layout: small hand interaction upper right, skill burst beneath left, grenade beneath-left, weapon swap with two guns at bottom-left of cluster, and large running-person dodge button bottom-right. Preserve their respective relative sizes and positions.\n\nFour clear environmental interactables, distributed in unobscured area: yellow search magnifier marker and warm yellow ground ring around ambulance bay; yellow gear/purify marker and ring on purifier tank upper middle; an actual seated injured survivor at the roadside medical tent, with warm yellow rescue-person marker/ring, visibly distinct from combat enemies; warm yellow doorway marker and ground bracket at hospital front entrance. Markers must be readable at native 1334×750 size. Add a compact tracked rescue objective with rescue-person icon and '0/1' below status bars, without creating a detail panel. On the far right open road edge show a cyan ark-return arrow marker pointing right and compact 'ARK' label, clearly communicating evacuation direction. Keep this world marker above the right action buttons and below the minimap. All interaction markers warm yellow; threat magenta; navigation cyan. Make every one of ambulance, purifier, rescue target and hospital entrance visibly identifiable, with environment shapes unhidden. Daylight.\nNo full-screen regional overview, no location-selection panel, no departure confirmation button, no large text blocks, no decorative title, no watermark, no mockup device frame. This is a full-bleed gameplay screenshot. Maintain map topology and visual style.",
+      "referencePaths": [
+        "docs/design/assets/map-ui-v2/source/01-hospital-exploration-map.png",
+        "docs/design/assets/ui-mockups/01-day-exploration.png"
+      ],
+      "inputGenerationIds": [
+        "gen-map-hospital"
+      ],
+      "generatedResultPath": "C:/Users/dai/.codex/generated_images/01a1a03a-942f-7e40-a904-d9f78ca19745/exec-5987c678-b6d9-46b0-b828-88b7e9e37dfe.png",
+      "sourcePath": "docs/design/assets/map-ui-v2/source/08-hospital-exploration-ui.png",
+      "disposition": "superseded",
+      "promptReport": "task-2-hospital-report.md"
+    },
+    {
+      "id": "gen-hospital-final",
+      "sourceType": "ai-generated",
+      "tool": "image_gen.imagegen",
+      "prompt": "Precise UI navigation correction to the attached complete hospital gameplay screenshot. Change ONLY the top-right ark-return navigation: the small cyan arrow next to the vehicle and 112 m MUST point RIGHT instead of left. In the circular minimap, move the cyan vehicle/ark icon to the RIGHT side of the player arrow, with the dotted cyan route curving from the player to that right-hand ark icon, matching the already correct right-pointing ARK world exit at the far right of the hospital road. Keep the yellow objective diamond at top of minimap. Preserve absolutely everything else: exact hospital architecture, four warm-yellow interaction markers and rings (ambulance, hospital entrance, purifier, injured survivor), all actors and enemies, HP/shield/injury/pollution, top center timer 04:26 and sun bar, left joystick, the five right controls and all their exact sizes/positions, all pixel-art styling, road geometry, text, full-bleed frame and colors. No other changes. Same landscape aspect ratio intended for 1334×750.",
+      "referencePaths": [
+        "C:/Users/dai/.codex/generated_images/01a1a03a-942f-7e40-a904-d9f78ca19745/exec-5987c678-b6d9-46b0-b828-88b7e9e37dfe.png"
+      ],
+      "inputGenerationIds": [
+        "gen-hospital-initial"
+      ],
+      "generatedResultPath": "C:/Users/dai/.codex/generated_images/01a1a03a-942f-7e40-a904-d9f78ca19745/exec-d66d27b7-0559-4f12-ba8a-1f863a72eecd.png",
+      "sourcePath": "docs/design/assets/map-ui-v2/source/08-hospital-exploration-ui.png",
+      "disposition": "retained-source",
+      "promptReport": "task-2-hospital-report.md"
+    },
+    {
+      "id": "gen-police-initial",
+      "sourceType": "ai-generated",
+      "tool": "image_gen.imagegen",
+      "prompt": "Use case: ui-mockup. Create ONE high-fidelity landscape 1334×750-intent complete mobile survival gameplay screenshot, 16:9 refined orthographic pixel art. Image 1 is the matching approved police exploration MAP reference: preserve its station architecture, shields, blue banners, patrol-car bay, street layout, armory yard, cyan machinery, warm yellow fixtures, grey-violet streets and moss. Image 2 is the FIXED EXPLORATION HUD reference: closely match its exact shell positions, proportions, pixel edges, cyan outlines and icons. Build a police-station exploration gameplay state on image 1. Keep an open central play lane and show a readable scarf-wearing armed survivor and 3 nearby zombie enemies with small health bars. Mandatory world interactions, large enough to read at 1334×750: main police entrance with shield and steps; warm-yellow ring and entrance chevron; separate keycard access terminal with glowing yellow keycard icon beside station annex; locked armory building with clear padlock symbol on roll-up shutter and gun silhouettes visible behind grille; password clue prop as an open notebook on a desk near the entrance with visible '7 4 2' code and a magnifying-glass marker. Put warm-yellow rings/diamonds on these four interaction props. Ensure notebook is visible in the world, not a panel. HUD fixed to image 2: top-left red health 420/420, cyan shield 180/180, amber injury 18/100, magenta pollution 32/100; top-center daylight sun and 04:26 timer with yellow day bar and small magenta danger meter; top-right circular cyan minimap with yellow objective diamond and cyan ark-return dotted direction; two compact rows beside minimap show yellow diamond 64m and cyan ark icon + LEFT arrow 712m. A small compact objective label reads '寻找密码线索'. Bottom-left large translucent cyan circular joystick; bottom-right same five circular controls in same arrangement as image 2: interaction hand, skill burst, grenade, weapon switch, large dodge-running person. Keep all four required world props visible away from HUD occlusion. Cyan normal HUD, yellow interactable affordances, magenta enemies/danger. Gameplay camera straight-down orthographic with building fronts matching reference art, no isometric projection. No region-selection panel, no full-screen map, no watermark. Text minimal and crisp.",
+      "referencePaths": [
+        "docs/design/assets/map-ui-v2/source/02-police-exploration-map.png",
+        "docs/design/assets/ui-mockups/01-day-exploration.png"
+      ],
+      "inputGenerationIds": [
+        "gen-map-police"
+      ],
+      "generatedResultPath": "C:/Users/dai/.codex/generated_images/01a1a03b-1565-7db3-b647-46ea7b6f43d8/exec-39d0b014-ac94-4adb-a3e7-0088d4287422.png",
+      "sourcePath": "docs/design/assets/map-ui-v2/source/09-police-exploration-ui.png",
+      "disposition": "superseded",
+      "promptReport": "task-2-police-factory-report.md"
+    },
+    {
+      "id": "gen-factory-initial",
+      "sourceType": "ai-generated",
+      "tool": "image_gen.imagegen",
+      "prompt": "Use case: ui-mockup. Create ONE high-fidelity landscape 1334×750-intent complete mobile survival gameplay screenshot, 16:9 refined orthographic pixel art. Image 1 is the approved FACTORY exploration MAP: preserve the large industrial factory building at upper left with loading entrance, upper-middle cyan tanks and pipes, upper-right conveyor production line, middle-right yellow gantry crane and control booth, bottom-left power coils and large generator, grey-violet streets, moss, cyan lights and yellow fixtures. Image 2 is the FIXED DAY EXPLORATION HUD shell: match its exact top bars, top-right minimap, bottom-left joystick and bottom-right five circular controls. Create a factory exploration gameplay state based on image 1 while keeping central street readable for a scarf-wearing armed survivor firing and 3 zombie enemies with small magenta/red health bars. Mandatory clearly readable world props, outside HUD occlusion: power junction box with lightning bolt and short warm-yellow ring on the upper-left factory side wall; large exposed industrial generator with exhaust stacks on the lower-left island; crane control console with lever and hook symbol beside middle-right yellow gantry crane; upper-right recognizable noisy production zone with conveyor belt, several crates, mechanical robotic arm and stamping press; show magenta sound-wave arcs above the active conveyor machinery. Add warm-yellow interaction diamonds and rings at power junction, generator and crane console. Keep power box, generator and crane console individually distinguishable. HUD: top-left red health 420/420, cyan shield 180/180, amber injury 18/100, magenta pollution 32/100. Top-center sun icon and 04:26 daylight timer, yellow day bar and magenta danger meter. Top-right cyan circular minimap with objective diamond and ark dotted return direction, compact neighboring yellow objective row 82m and cyan ark icon + LEFT arrow 712m. Compact objective '恢复工厂供电'. Bottom-left translucent cyan circular joystick. Bottom-right same control arrangement and readable white symbols as HUD reference: hand interaction, burst skill, grenade, weapon switch, large dodge/running person. Warm-yellow affordances on interactables; magenta sound/danger in production zone; cyan normal HUD. Flat straight-down orthographic matching map and HUD reference camera. No region-selection panel, no full-screen map, no isometric projection, no watermark. Keep important machinery and interactions visible, minimize text.",
+      "referencePaths": [
+        "docs/design/assets/map-ui-v2/source/03-factory-exploration-map.png",
+        "docs/design/assets/ui-mockups/01-day-exploration.png"
+      ],
+      "inputGenerationIds": [
+        "gen-map-factory"
+      ],
+      "generatedResultPath": "C:/Users/dai/.codex/generated_images/01a1a03b-1565-7db3-b647-46ea7b6f43d8/exec-71a1edf0-fbc4-47bb-8a2a-ddc5183b2b16.png",
+      "sourcePath": "docs/design/assets/map-ui-v2/source/10-factory-exploration-ui.png",
+      "disposition": "superseded",
+      "promptReport": "task-2-police-factory-report.md"
+    },
+    {
+      "id": "gen-police-navigation",
+      "sourceType": "ai-generated",
+      "tool": "image_gen.imagegen",
+      "prompt": "Precise navigation and HUD alignment correction. Image 1 is police gameplay EDIT TARGET. Image 2 is approved hospital HUD layout reference ONLY. Keep police environment, all buildings, all roads and map crop, player, three zombies, police entrance yellow chevrons, yellow-ring keycard terminal, locked armory with weapon windows, and open notebook password-clue desk with visible numerals and magnifier ABSOLUTELY UNCHANGED.\nCorrect only return navigation and HUD geometry to the fixed shell of image 2: cyan vehicle return row's arrow must point RIGHT (replace current left arrow). In circular minimap put cyan ark vehicle to RIGHT of player arrow and dotted cyan route curving from player to that right-hand vehicle; yellow objective diamond stays above. Keep police distance values 64m objective and 712m return. Position these two distance rows exactly like hospital ref (adjacent left of minimap, objective at about 81 pixels and return at about 117 pixels in 1334×750 frame). At the far RIGHT open road edge above hand control add one small cyan right-pointing \"ARK\" arrow so world exit agrees with minimap.\nMake major HUD bounding boxes and positions match image 2's fixed shell: four condition bars top-left, daylight timer top-center, circular minimap top-right, joystick lower-left, same five cyan controls hand/burst/grenade/weapon switch/large dodge lower-right, same sizes and centers as image2. Preserve compact police objective “寻找密码线索”. No changes to world/interactables and no obscuring them. Same full-screen 16:9 refined orthographic pixel art intended 1334×750, no panels or watermark.",
+      "referencePaths": [
+        "C:/Users/dai/.codex/generated_images/01a1a03b-1565-7db3-b647-46ea7b6f43d8/exec-39d0b014-ac94-4adb-a3e7-0088d4287422.png",
+        "docs/design/assets/map-ui-v2/source/08-hospital-exploration-ui.png"
+      ],
+      "inputGenerationIds": [
+        "gen-police-initial",
+        "gen-hospital-final"
+      ],
+      "generatedResultPath": "C:/Users/dai/.codex/generated_images/01a1a03a-157a-7d72-aee7-84491286e16b/exec-4ca78737-c13a-43a1-accd-5f3fa768ef66.png",
+      "sourcePath": "docs/design/assets/map-ui-v2/source/09-police-exploration-ui.png",
+      "disposition": "superseded",
+      "promptReport": "task-2-report.md"
+    },
+    {
+      "id": "gen-police-arrow",
+      "sourceType": "ai-generated",
+      "tool": "image_gen.imagegen",
+      "prompt": "ONE TINY EDIT ONLY to this police gameplay image: at the top right, outside and immediately left of the circular minimap, there are two black distance rows. The lower row reads a cyan vehicle, a LEFT arrow, and 712m. REPLACE ONLY THAT LEFT ARROW WITH A RIGHT ARROW. Exact visual order: cyan vehicle icon, then cyan → symbol, then white 712m. Right arrowhead must be on RIGHT END, adjacent to the digits 712. The arrow must look like →, never ←. Preserve ALL other pixels and content, including already right-side minimap car, right-pointing ARK world exit, open password notebook, HUD, controls and environment. No other changes.",
+      "referencePaths": [
+        "C:/Users/dai/.codex/generated_images/01a1a03a-157a-7d72-aee7-84491286e16b/exec-4ca78737-c13a-43a1-accd-5f3fa768ef66.png"
+      ],
+      "inputGenerationIds": [
+        "gen-police-navigation"
+      ],
+      "generatedResultPath": "C:/Users/dai/.codex/generated_images/01a1a03a-157a-7d72-aee7-84491286e16b/exec-1dbc0b76-f7d4-4dda-bff4-3ace68014c1f.png",
+      "sourcePath": "docs/design/assets/map-ui-v2/source/09-police-exploration-ui.png",
+      "disposition": "superseded",
+      "promptReport": "task-2-report.md"
+    },
+    {
+      "id": "gen-factory-final",
+      "sourceType": "ai-generated",
+      "tool": "image_gen.imagegen",
+      "prompt": "Precise localized correction of factory gameplay EDIT TARGET image1; image2 is approved hospital UI reference. Preserve factory map, all four machines/interactions, player, zombies, production belt, robotic arm, press, magenta noise arcs and every HUD control.\nOnly fix navigation: In upper-right small cyan car distance row, render “car icon  →  712m”. The arrow is RIGHT-POINTING: horizontal shaft with arrowhead at its RIGHT end, visually exactly →. Remove the existing left-pointing arrow. In minimap cyan car must be RIGHT of player and cyan dotted route curves right to car. Yellow objective diamond stays above. At far right world road edge add small cyan RIGHT-pointing outline ARK arrow above hand action button, like hospital reference. Replace existing yellow sound-arrow at that exact road edge with cyan ARK return arrow.\nMove factory top-right objective 82m and return 712m rows DOWN slightly to align with hospital reference, about y81 and y117 respectively at 1334×750. Leave minimap and timer fixed. All other HUD positions stay fixed, including five action buttons and joystick, health/shield/injury/pollution. Keep machinery and power junction/generator/crane console readable and distinct. Full-bleed 16:9 intended 1334×750 pixel art. No additional edits.",
+      "referencePaths": [
+        "C:/Users/dai/.codex/generated_images/01a1a03b-1565-7db3-b647-46ea7b6f43d8/exec-71a1edf0-fbc4-47bb-8a2a-ddc5183b2b16.png",
+        "docs/design/assets/map-ui-v2/source/08-hospital-exploration-ui.png"
+      ],
+      "inputGenerationIds": [
+        "gen-factory-initial",
+        "gen-hospital-final"
+      ],
+      "generatedResultPath": "C:/Users/dai/.codex/generated_images/01a1a03a-157a-7d72-aee7-84491286e16b/exec-b46ad750-be0e-4fcf-aeac-950df8db70c4.png",
+      "sourcePath": "docs/design/assets/map-ui-v2/source/10-factory-exploration-ui.png",
+      "disposition": "retained-source",
+      "promptReport": "task-2-report.md"
+    },
+    {
+      "id": "gen-police-final",
+      "sourceType": "ai-generated",
+      "tool": "image_gen.imagegen",
+      "prompt": "TINY LOCAL MINIMAP OBJECTIVE EDIT ONLY. Use this police gameplay image as exact edit target. Inside the TOP-RIGHT CIRCULAR MINIMAP, the cyan triangular player is in center, the yellow objective diamond is currently ABOVE-RIGHT/northeast, and the cyan car/ark is to the RIGHT. MOVE ONLY the yellow objective diamond from above-right to ABOVE-LEFT / NORTHWEST of the central player arrow, matching the password notebook which is northwest of the survivor in the world. Place the same yellow diamond at about 29% width and 29% height within the circular minimap, near its upper-left quarter. Remove the old upper-right yellow diamond; there must be exactly one yellow objective diamond INSIDE the minimap, now upper-left. If an objective route cue is drawn it should point diagonally UP-LEFT to that diamond. DO NOT move or recolor the cyan car, cyan player, or dotted cyan ark-return route on the RIGHT.\nPreserve every other pixel and all content: minimap cyan border and streets, external 64m objective badge, cyan car → 712m right-arrow row, world right-pointing ARK sign, notebook with 7 and 2 and magnifier, all world props/buildings/interactions, all characters/enemies, all health bars/timer/text, joystick and all five action controls. Only move the small yellow objective diamond within minimap from northeast to northwest. Same dimensions, camera, pixel art and colors.",
+      "referencePaths": [
+        "C:/Users/dai/.codex/generated_images/01a1a03a-157a-7d72-aee7-84491286e16b/exec-1dbc0b76-f7d4-4dda-bff4-3ace68014c1f.png"
+      ],
+      "inputGenerationIds": [
+        "gen-police-arrow"
+      ],
+      "generatedResultPath": "C:/Users/dai/.codex/generated_images/01a1a03a-157a-7d72-aee7-84491286e16b/exec-9b5aa481-8cd5-44f4-94a8-3c2a31fc5f5e.png",
+      "sourcePath": "docs/design/assets/map-ui-v2/source/09-police-exploration-ui.png",
+      "disposition": "retained-source",
+      "promptReport": "task-2-report.md"
+    }
+  ],
+  "groups": [
+    {
+      "id": "sourceMaps",
+      "count": 3,
+      "assets": [
+        {
+          "id": "sourceMaps-01-hospital-exploration-map",
+          "path": "docs/design/assets/map-ui-v2/source/01-hospital-exploration-map.png",
+          "width": 1672,
+          "height": 941,
+          "colorMode": "RGB",
+          "alphaRequired": false,
+          "sourceType": "ai-generated",
+          "sourcePaths": [],
+          "normalization": "Original built-in output copied byte-for-byte; no resizing.",
+          "sha256": "3a20fc752e4f8bad11c442d8746e027a6e1c8442f2b0498504d51482dacbecbd",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "generationId": "gen-map-hospital"
+        },
+        {
+          "id": "sourceMaps-02-police-exploration-map",
+          "path": "docs/design/assets/map-ui-v2/source/02-police-exploration-map.png",
+          "width": 1672,
+          "height": 941,
+          "colorMode": "RGB",
+          "alphaRequired": false,
+          "sourceType": "ai-generated",
+          "sourcePaths": [],
+          "normalization": "Original built-in output copied byte-for-byte; no resizing.",
+          "sha256": "2df350d12d39c5e036748868ae7109ac1f3c80901d06dab7b675712de64e729a",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "generationId": "gen-map-police"
+        },
+        {
+          "id": "sourceMaps-03-factory-exploration-map",
+          "path": "docs/design/assets/map-ui-v2/source/03-factory-exploration-map.png",
+          "width": 1672,
+          "height": 941,
+          "colorMode": "RGB",
+          "alphaRequired": false,
+          "sourceType": "ai-generated",
+          "sourcePaths": [],
+          "normalization": "Original built-in output copied byte-for-byte; no resizing.",
+          "sha256": "74716e3e67560c8a1484cfccc34e6d18580ced8e40cac5c474e3d5704bda423b",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "generationId": "gen-map-factory"
+        }
+      ]
+    },
+    {
+      "id": "sourceMockups",
+      "count": 7,
+      "assets": [
+        {
+          "id": "sourceMockups-04-region-overview-ui",
+          "path": "docs/design/assets/map-ui-v2/source/04-region-overview-ui.png",
+          "width": 1672,
+          "height": 940,
+          "colorMode": "RGB",
+          "alphaRequired": false,
+          "sourceType": "ai-generated",
+          "sourcePaths": [],
+          "normalization": "Original built-in output copied byte-for-byte; no resizing.",
+          "sha256": "8aa79c3a59470ef885768bcb608ba29a1050131e830edc16cc64a26d1ab6bb70",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "generationId": "gen-region-overview"
+        },
+        {
+          "id": "sourceMockups-05-hospital-selected-ui",
+          "path": "docs/design/assets/map-ui-v2/source/05-hospital-selected-ui.png",
+          "width": 1672,
+          "height": 940,
+          "colorMode": "RGB",
+          "alphaRequired": false,
+          "sourceType": "ai-generated",
+          "sourcePaths": [],
+          "normalization": "Original built-in output copied byte-for-byte; no resizing.",
+          "sha256": "28e76bdb9567c93b4c13fb33282d2e50270635194a1fcf49b699a3af7617531e",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "generationId": "gen-region-hospital"
+        },
+        {
+          "id": "sourceMockups-06-police-selected-ui",
+          "path": "docs/design/assets/map-ui-v2/source/06-police-selected-ui.png",
+          "width": 1672,
+          "height": 940,
+          "colorMode": "RGB",
+          "alphaRequired": false,
+          "sourceType": "ai-generated",
+          "sourcePaths": [],
+          "normalization": "Original built-in output copied byte-for-byte; no resizing.",
+          "sha256": "5c8ce65ffd20765dab3ae8505de7fbff4e61413a5883e24b9c0248deb804c7f5",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "generationId": "gen-region-police"
+        },
+        {
+          "id": "sourceMockups-07-factory-selected-ui",
+          "path": "docs/design/assets/map-ui-v2/source/07-factory-selected-ui.png",
+          "width": 1672,
+          "height": 940,
+          "colorMode": "RGB",
+          "alphaRequired": false,
+          "sourceType": "ai-generated",
+          "sourcePaths": [],
+          "normalization": "Original built-in output copied byte-for-byte; no resizing.",
+          "sha256": "765d9278a053338ed23a73910603cfd917af700b026d05f2a4ea78d83e81ec40",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "generationId": "gen-region-factory"
+        },
+        {
+          "id": "sourceMockups-08-hospital-exploration-ui",
+          "path": "docs/design/assets/map-ui-v2/source/08-hospital-exploration-ui.png",
+          "width": 1672,
+          "height": 941,
+          "colorMode": "RGB",
+          "alphaRequired": false,
+          "sourceType": "ai-generated",
+          "sourcePaths": [],
+          "normalization": "Original built-in output copied byte-for-byte; no resizing.",
+          "sha256": "a688433af38c4627a10b380fe90ca3cfc8a8e22738b397b6250aefb7110140ed",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "generationId": "gen-hospital-final"
+        },
+        {
+          "id": "sourceMockups-10-factory-exploration-ui",
+          "path": "docs/design/assets/map-ui-v2/source/10-factory-exploration-ui.png",
+          "width": 1672,
+          "height": 941,
+          "colorMode": "RGB",
+          "alphaRequired": false,
+          "sourceType": "ai-generated",
+          "sourcePaths": [],
+          "normalization": "Original built-in output copied byte-for-byte; no resizing.",
+          "sha256": "3f8a568eeb15cfe1823dced47605e7634abe46be39bff5e02c2e443f9ab67711",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "generationId": "gen-factory-final"
+        },
+        {
+          "id": "sourceMockups-09-police-exploration-ui",
+          "path": "docs/design/assets/map-ui-v2/source/09-police-exploration-ui.png",
+          "width": 1672,
+          "height": 941,
+          "colorMode": "RGB",
+          "alphaRequired": false,
+          "sourceType": "ai-generated",
+          "sourcePaths": [],
+          "normalization": "Original built-in output copied byte-for-byte; no resizing.",
+          "sha256": "50a35f037fff63070ae41d5e0ebdc9d7e032daf289955c391d13a942afcae9d2",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "generationId": "gen-police-final"
+        }
+      ]
+    },
+    {
+      "id": "explorationMaps",
+      "count": 3,
+      "assets": [
+        {
+          "id": "explorationMaps-01-hospital-day",
+          "path": "docs/design/assets/map-ui-v2/maps/01-hospital-day.png",
+          "width": 1334,
+          "height": 750,
+          "colorMode": "RGBA",
+          "alphaRequired": false,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/map-ui-v2/source/01-hospital-exploration-map.png"
+          ],
+          "normalization": "System.Drawing centered cover crop; NearestNeighbor, PixelOffset Half, SourceCopy; 1334x750.",
+          "sha256": "df23942f7599dae212a7a7fde854c6122143f6c46e4398f198926eaa729b36f9",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true
+        },
+        {
+          "id": "explorationMaps-02-police-station-day",
+          "path": "docs/design/assets/map-ui-v2/maps/02-police-station-day.png",
+          "width": 1334,
+          "height": 750,
+          "colorMode": "RGBA",
+          "alphaRequired": false,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/map-ui-v2/source/02-police-exploration-map.png"
+          ],
+          "normalization": "System.Drawing centered cover crop; NearestNeighbor, PixelOffset Half, SourceCopy; 1334x750.",
+          "sha256": "ca0d623f43f4be1b3f337ee9bb64d2ca5f5a00ac62c903c10d7cdbee611ca5ed",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true
+        },
+        {
+          "id": "explorationMaps-03-factory-day",
+          "path": "docs/design/assets/map-ui-v2/maps/03-factory-day.png",
+          "width": 1334,
+          "height": 750,
+          "colorMode": "RGBA",
+          "alphaRequired": false,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/map-ui-v2/source/03-factory-exploration-map.png"
+          ],
+          "normalization": "System.Drawing centered cover crop; NearestNeighbor, PixelOffset Half, SourceCopy; 1334x750.",
+          "sha256": "9f6470e5fc6f6736d35a558ee256d2d52c92cb38315bbc6d5075fd29aac7e8ce",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true
+        }
+      ]
+    },
+    {
+      "id": "uiMockups",
+      "count": 7,
+      "assets": [
+        {
+          "id": "uiMockups-01-region-overview-ui",
+          "path": "docs/design/assets/map-ui-v2/mockups/01-region-overview-ui.png",
+          "width": 1334,
+          "height": 750,
+          "colorMode": "RGBA",
+          "alphaRequired": false,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/map-ui-v2/source/04-region-overview-ui.png"
+          ],
+          "normalization": "System.Drawing centered cover crop; NearestNeighbor, PixelOffset Half, SourceCopy; 1334x750.",
+          "sha256": "2ca32eb6c9724310212386f35b8795d5377f2f22f4016ea4ba006c4ebe897741",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true
+        },
+        {
+          "id": "uiMockups-02-hospital-selected-ui",
+          "path": "docs/design/assets/map-ui-v2/mockups/02-hospital-selected-ui.png",
+          "width": 1334,
+          "height": 750,
+          "colorMode": "RGBA",
+          "alphaRequired": false,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/map-ui-v2/source/05-hospital-selected-ui.png"
+          ],
+          "normalization": "System.Drawing centered cover crop; NearestNeighbor, PixelOffset Half, SourceCopy; 1334x750.",
+          "sha256": "5ce1c70943bc0c7d1ce76d825dbc6ff0eb2dea9e6b073c6126587e2096213093",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true
+        },
+        {
+          "id": "uiMockups-03-police-selected-ui",
+          "path": "docs/design/assets/map-ui-v2/mockups/03-police-selected-ui.png",
+          "width": 1334,
+          "height": 750,
+          "colorMode": "RGBA",
+          "alphaRequired": false,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/map-ui-v2/source/06-police-selected-ui.png"
+          ],
+          "normalization": "System.Drawing centered cover crop; NearestNeighbor, PixelOffset Half, SourceCopy; 1334x750.",
+          "sha256": "9aa36e718485f795d29112c015502983e0597dbc809a1d0bed84cf4d3b6bed89",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true
+        },
+        {
+          "id": "uiMockups-04-factory-selected-ui",
+          "path": "docs/design/assets/map-ui-v2/mockups/04-factory-selected-ui.png",
+          "width": 1334,
+          "height": 750,
+          "colorMode": "RGBA",
+          "alphaRequired": false,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/map-ui-v2/source/07-factory-selected-ui.png"
+          ],
+          "normalization": "System.Drawing centered cover crop; NearestNeighbor, PixelOffset Half, SourceCopy; 1334x750.",
+          "sha256": "b0f37ed3b2db812347f56c5567d621d0ebe1486e88cf957937c7cc1e0d5ebed1",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true
+        },
+        {
+          "id": "uiMockups-05-hospital-exploration-ui",
+          "path": "docs/design/assets/map-ui-v2/mockups/05-hospital-exploration-ui.png",
+          "width": 1334,
+          "height": 750,
+          "colorMode": "RGBA",
+          "alphaRequired": false,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/map-ui-v2/source/08-hospital-exploration-ui.png"
+          ],
+          "normalization": "System.Drawing centered cover crop; NearestNeighbor, PixelOffset Half, SourceCopy; 1334x750.",
+          "sha256": "1456cb52d9a221c7913adc45bc70c563527a2bbc126342ddea45ced4e6e3c0f6",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true
+        },
+        {
+          "id": "uiMockups-06-police-exploration-ui",
+          "path": "docs/design/assets/map-ui-v2/mockups/06-police-exploration-ui.png",
+          "width": 1334,
+          "height": 750,
+          "colorMode": "RGBA",
+          "alphaRequired": false,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/map-ui-v2/source/09-police-exploration-ui.png"
+          ],
+          "normalization": "System.Drawing centered cover crop; NearestNeighbor, PixelOffset Half, SourceCopy; 1334x750.",
+          "sha256": "15c4f7719832d264ea4d5c3243cb22035f1486212ba34ad805f9131b17cf51e1",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true
+        },
+        {
+          "id": "uiMockups-07-factory-exploration-ui",
+          "path": "docs/design/assets/map-ui-v2/mockups/07-factory-exploration-ui.png",
+          "width": 1334,
+          "height": 750,
+          "colorMode": "RGBA",
+          "alphaRequired": false,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/map-ui-v2/source/10-factory-exploration-ui.png"
+          ],
+          "normalization": "System.Drawing centered cover crop; NearestNeighbor, PixelOffset Half, SourceCopy; 1334x750.",
+          "sha256": "26c3771d28dd9f9794a0d534a3621f68ec80526dd94350f74bb30a4c46fe6737",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true
+        }
+      ]
+    },
+    {
+      "id": "locationThumbnails",
+      "count": 6,
+      "assets": [
+        {
+          "id": "locationThumbnails-square-01-hospital",
+          "path": "docs/design/assets/map-ui-v2/location-thumbnails/square/01-hospital.png",
+          "width": 512,
+          "height": 512,
+          "colorMode": "RGBA",
+          "alphaRequired": false,
+          "sourceType": "reused",
+          "sourcePaths": [
+            "docs/design/assets/world-characters-monsters/location-thumbnails/square/01-hospital.png"
+          ],
+          "normalization": "Byte-identical copy retaining original filename.",
+          "sha256": "d2882226a466a2072f5734ac2146939e79f066262a48571af110c1b35c89997b",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "originalPath": "docs/design/assets/world-characters-monsters/location-thumbnails/square/01-hospital.png"
+        },
+        {
+          "id": "locationThumbnails-square-03-police-station",
+          "path": "docs/design/assets/map-ui-v2/location-thumbnails/square/03-police-station.png",
+          "width": 512,
+          "height": 512,
+          "colorMode": "RGBA",
+          "alphaRequired": false,
+          "sourceType": "reused",
+          "sourcePaths": [
+            "docs/design/assets/world-characters-monsters/location-thumbnails/square/03-police-station.png"
+          ],
+          "normalization": "Byte-identical copy retaining original filename.",
+          "sha256": "5cd4b86340f305cfec657223e559e9198c12b58a51f171e6cebf35ce9d2fe9c0",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "originalPath": "docs/design/assets/world-characters-monsters/location-thumbnails/square/03-police-station.png"
+        },
+        {
+          "id": "locationThumbnails-square-04-factory",
+          "path": "docs/design/assets/map-ui-v2/location-thumbnails/square/04-factory.png",
+          "width": 512,
+          "height": 512,
+          "colorMode": "RGBA",
+          "alphaRequired": false,
+          "sourceType": "reused",
+          "sourcePaths": [
+            "docs/design/assets/world-characters-monsters/location-thumbnails/square/04-factory.png"
+          ],
+          "normalization": "Byte-identical copy retaining original filename.",
+          "sha256": "58ba1c8920f9b10eec7306a6eb1a702ae2a7415a74997f2c5499dd246adc1c4f",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "originalPath": "docs/design/assets/world-characters-monsters/location-thumbnails/square/04-factory.png"
+        },
+        {
+          "id": "locationThumbnails-wide-01-hospital",
+          "path": "docs/design/assets/map-ui-v2/location-thumbnails/wide/01-hospital.png",
+          "width": 512,
+          "height": 288,
+          "colorMode": "RGBA",
+          "alphaRequired": false,
+          "sourceType": "reused",
+          "sourcePaths": [
+            "docs/design/assets/world-characters-monsters/location-thumbnails/wide/01-hospital.png"
+          ],
+          "normalization": "Byte-identical copy retaining original filename.",
+          "sha256": "ef8f509215d411f8a8ba412d84cd9b281e2e70af09b7406ab0ab1361df893279",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "originalPath": "docs/design/assets/world-characters-monsters/location-thumbnails/wide/01-hospital.png"
+        },
+        {
+          "id": "locationThumbnails-wide-03-police-station",
+          "path": "docs/design/assets/map-ui-v2/location-thumbnails/wide/03-police-station.png",
+          "width": 512,
+          "height": 288,
+          "colorMode": "RGBA",
+          "alphaRequired": false,
+          "sourceType": "reused",
+          "sourcePaths": [
+            "docs/design/assets/world-characters-monsters/location-thumbnails/wide/03-police-station.png"
+          ],
+          "normalization": "Byte-identical copy retaining original filename.",
+          "sha256": "590fc3a4d2680328ecccd35a4a093b04bd06650895e18f727b3871341c676379",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "originalPath": "docs/design/assets/world-characters-monsters/location-thumbnails/wide/03-police-station.png"
+        },
+        {
+          "id": "locationThumbnails-wide-04-factory",
+          "path": "docs/design/assets/map-ui-v2/location-thumbnails/wide/04-factory.png",
+          "width": 512,
+          "height": 288,
+          "colorMode": "RGBA",
+          "alphaRequired": false,
+          "sourceType": "reused",
+          "sourcePaths": [
+            "docs/design/assets/world-characters-monsters/location-thumbnails/wide/04-factory.png"
+          ],
+          "normalization": "Byte-identical copy retaining original filename.",
+          "sha256": "0bcdb6c450def34b213f6994f54c7bab7679b099e749ef31cfe8d695d7ff44a7",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "originalPath": "docs/design/assets/world-characters-monsters/location-thumbnails/wide/04-factory.png"
+        }
+      ]
+    },
+    {
+      "id": "gatheredInteractables",
+      "count": 12,
+      "assets": [
+        {
+          "id": "gatheredInteractables-08-medical-cabinet",
+          "path": "docs/design/assets/map-ui-v2/interactables/hospital/08-medical-cabinet.png",
+          "width": 256,
+          "height": 256,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "reused",
+          "sourcePaths": [
+            "docs/design/assets/map-interactables/world-props/loot-resource/08-medical-cabinet.png"
+          ],
+          "normalization": "Byte-identical copy retaining original filename.",
+          "sha256": "70049eed9327322b64b57ee6703bc9f4b0b492408c289b8e1de6c4e2d56e05d0",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "originalPath": "docs/design/assets/map-interactables/world-props/loot-resource/08-medical-cabinet.png"
+        },
+        {
+          "id": "gatheredInteractables-03-purifier",
+          "path": "docs/design/assets/map-ui-v2/interactables/hospital/03-purifier.png",
+          "width": 256,
+          "height": 256,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "reused",
+          "sourcePaths": [
+            "docs/design/assets/map-interactables/world-props/facility-event/03-purifier.png"
+          ],
+          "normalization": "Byte-identical copy retaining original filename.",
+          "sha256": "483a26cfd16b74a489e2afd322877761b649f86e373a484a146b632fc52d858b",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "originalPath": "docs/design/assets/map-interactables/world-props/facility-event/03-purifier.png"
+        },
+        {
+          "id": "gatheredInteractables-14-rescue-beacon",
+          "path": "docs/design/assets/map-ui-v2/interactables/hospital/14-rescue-beacon.png",
+          "width": 256,
+          "height": 256,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "reused",
+          "sourcePaths": [
+            "docs/design/assets/map-interactables/world-props/facility-event/14-rescue-beacon.png"
+          ],
+          "normalization": "Byte-identical copy retaining original filename.",
+          "sha256": "e53cd5f1037b60d6724c03432ab0ea13afd56cf05a79703cfd8137a64343f9ca",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "originalPath": "docs/design/assets/map-interactables/world-props/facility-event/14-rescue-beacon.png"
+        },
+        {
+          "id": "gatheredInteractables-16-extraction-beacon",
+          "path": "docs/design/assets/map-ui-v2/interactables/hospital/16-extraction-beacon.png",
+          "width": 256,
+          "height": 256,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "reused",
+          "sourcePaths": [
+            "docs/design/assets/map-interactables/world-props/facility-event/16-extraction-beacon.png"
+          ],
+          "normalization": "Byte-identical copy retaining original filename.",
+          "sha256": "bb6d973de038511e8dd5d307b3be110c54f893f61a15eebabfb7ed541462a3a4",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "originalPath": "docs/design/assets/map-interactables/world-props/facility-event/16-extraction-beacon.png"
+        },
+        {
+          "id": "gatheredInteractables-02-armory-crate",
+          "path": "docs/design/assets/map-ui-v2/interactables/police-station/02-armory-crate.png",
+          "width": 256,
+          "height": 256,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "reused",
+          "sourcePaths": [
+            "docs/design/assets/map-interactables/world-props/loot-resource/02-armory-crate.png"
+          ],
+          "normalization": "Byte-identical copy retaining original filename.",
+          "sha256": "a08f9537aeb78dbcb792d3fc866618ee51d1d39412bedbfb97e21f29bcbf4566",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "originalPath": "docs/design/assets/map-interactables/world-props/loot-resource/02-armory-crate.png"
+        },
+        {
+          "id": "gatheredInteractables-05-locked-door",
+          "path": "docs/design/assets/map-ui-v2/interactables/police-station/05-locked-door.png",
+          "width": 256,
+          "height": 256,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "reused",
+          "sourcePaths": [
+            "docs/design/assets/map-interactables/world-props/facility-event/05-locked-door.png"
+          ],
+          "normalization": "Byte-identical copy retaining original filename.",
+          "sha256": "6eaa284bdcb7d97ee7b7064ff39d16e4ea6689c355bd24685758c3191a35397b",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "originalPath": "docs/design/assets/map-interactables/world-props/facility-event/05-locked-door.png"
+        },
+        {
+          "id": "gatheredInteractables-06-keycard-reader",
+          "path": "docs/design/assets/map-ui-v2/interactables/police-station/06-keycard-reader.png",
+          "width": 256,
+          "height": 256,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "reused",
+          "sourcePaths": [
+            "docs/design/assets/map-interactables/world-props/facility-event/06-keycard-reader.png"
+          ],
+          "normalization": "Byte-identical copy retaining original filename.",
+          "sha256": "21795dbfdc6a3f6e5034c3f4703fdf942269bd6818ef6da492940889ebce6f5d",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "originalPath": "docs/design/assets/map-interactables/world-props/facility-event/06-keycard-reader.png"
+        },
+        {
+          "id": "gatheredInteractables-07-weapon-case",
+          "path": "docs/design/assets/map-ui-v2/interactables/police-station/07-weapon-case.png",
+          "width": 256,
+          "height": 256,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "reused",
+          "sourcePaths": [
+            "docs/design/assets/map-interactables/world-props/loot-resource/07-weapon-case.png"
+          ],
+          "normalization": "Byte-identical copy retaining original filename.",
+          "sha256": "40c14748c368b6c07f740c54f18f8b81af4b7d8c5f69ea7a6ace261ac4183710",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "originalPath": "docs/design/assets/map-interactables/world-props/loot-resource/07-weapon-case.png"
+        },
+        {
+          "id": "gatheredInteractables-01-power-junction",
+          "path": "docs/design/assets/map-ui-v2/interactables/factory/01-power-junction.png",
+          "width": 256,
+          "height": 256,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "reused",
+          "sourcePaths": [
+            "docs/design/assets/map-interactables/world-props/facility-event/01-power-junction.png"
+          ],
+          "normalization": "Byte-identical copy retaining original filename.",
+          "sha256": "d6e76cfdb09970f8a9869df446fc857af3b1896f624078550a98d5e7f47d1dc3",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "originalPath": "docs/design/assets/map-interactables/world-props/facility-event/01-power-junction.png"
+        },
+        {
+          "id": "gatheredInteractables-02-generator",
+          "path": "docs/design/assets/map-ui-v2/interactables/factory/02-generator.png",
+          "width": 256,
+          "height": 256,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "reused",
+          "sourcePaths": [
+            "docs/design/assets/map-interactables/world-props/facility-event/02-generator.png"
+          ],
+          "normalization": "Byte-identical copy retaining original filename.",
+          "sha256": "7541d077856b5a333013258e0b20b347a6c5cb768391aee6697369815c8f3978",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "originalPath": "docs/design/assets/map-interactables/world-props/facility-event/02-generator.png"
+        },
+        {
+          "id": "gatheredInteractables-12-crane-control",
+          "path": "docs/design/assets/map-ui-v2/interactables/factory/12-crane-control.png",
+          "width": 256,
+          "height": 256,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "reused",
+          "sourcePaths": [
+            "docs/design/assets/map-interactables/world-props/facility-event/12-crane-control.png"
+          ],
+          "normalization": "Byte-identical copy retaining original filename.",
+          "sha256": "8e6f934039c9460a0f986c38f7add982d4fa0874feaf9d041e3143b91aa01806",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "originalPath": "docs/design/assets/map-interactables/world-props/facility-event/12-crane-control.png"
+        },
+        {
+          "id": "gatheredInteractables-11-electronics-cache",
+          "path": "docs/design/assets/map-ui-v2/interactables/factory/11-electronics-cache.png",
+          "width": 256,
+          "height": 256,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "reused",
+          "sourcePaths": [
+            "docs/design/assets/map-interactables/world-props/loot-resource/11-electronics-cache.png"
+          ],
+          "normalization": "Byte-identical copy retaining original filename.",
+          "sha256": "f857ff100a4a464b7cdf04fc22fca6bb7d9bc9dea5f017ccfcb3432e9ae5b6d5",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "originalPath": "docs/design/assets/map-interactables/world-props/loot-resource/11-electronics-cache.png"
+        }
+      ]
+    },
+    {
+      "id": "nodeStates",
+      "count": 12,
+      "assets": [
+        {
+          "id": "nodeStates-factory-default",
+          "path": "docs/design/assets/map-ui-v2/map-nodes/factory-default.png",
+          "width": 128,
+          "height": 128,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/ui-icons/icons/map-actions/03-factory.png"
+          ],
+          "normalization": "NearestNeighbor icon at (23,23), 82px; hex ring; selected double ring/notch, high-risk skull or locked dim/lock via SourceOver.",
+          "sha256": "ad6e98647e9d838757d2b141b810878cd706ae20819ea23f1d737fa4588f0cbe",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true
+        },
+        {
+          "id": "nodeStates-factory-high-risk",
+          "path": "docs/design/assets/map-ui-v2/map-nodes/factory-high-risk.png",
+          "width": 128,
+          "height": 128,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/ui-icons/icons/map-actions/03-factory.png"
+          ],
+          "normalization": "NearestNeighbor icon at (23,23), 82px; hex ring; selected double ring/notch, high-risk skull or locked dim/lock via SourceOver.",
+          "sha256": "92c47c547ead7077082a18c99b3358c630d83c062c82ea9f6bda17928d943ddf",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true
+        },
+        {
+          "id": "nodeStates-factory-locked",
+          "path": "docs/design/assets/map-ui-v2/map-nodes/factory-locked.png",
+          "width": 128,
+          "height": 128,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/ui-icons/icons/map-actions/03-factory.png"
+          ],
+          "normalization": "NearestNeighbor icon at (23,23), 82px; hex ring; selected double ring/notch, high-risk skull or locked dim/lock via SourceOver.",
+          "sha256": "e7a43655c645905b73d4d78bde359176d076c9dfcc9663608615379bb7ef77ea",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true
+        },
+        {
+          "id": "nodeStates-factory-selected",
+          "path": "docs/design/assets/map-ui-v2/map-nodes/factory-selected.png",
+          "width": 128,
+          "height": 128,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/ui-icons/icons/map-actions/03-factory.png"
+          ],
+          "normalization": "NearestNeighbor icon at (23,23), 82px; hex ring; selected double ring/notch, high-risk skull or locked dim/lock via SourceOver.",
+          "sha256": "c554b61e62db480541697350e48cfbb6b78a0ede33656b3418e66a06bcfaf0bf",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true
+        },
+        {
+          "id": "nodeStates-hospital-default",
+          "path": "docs/design/assets/map-ui-v2/map-nodes/hospital-default.png",
+          "width": 128,
+          "height": 128,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/ui-icons/icons/map-actions/01-hospital.png"
+          ],
+          "normalization": "NearestNeighbor icon at (23,23), 82px; hex ring; selected double ring/notch, high-risk skull or locked dim/lock via SourceOver.",
+          "sha256": "69debb2396d91021d413e648b5ec1749cc6286323742a4567d24c0597772ccef",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true
+        },
+        {
+          "id": "nodeStates-hospital-high-risk",
+          "path": "docs/design/assets/map-ui-v2/map-nodes/hospital-high-risk.png",
+          "width": 128,
+          "height": 128,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/ui-icons/icons/map-actions/01-hospital.png"
+          ],
+          "normalization": "NearestNeighbor icon at (23,23), 82px; hex ring; selected double ring/notch, high-risk skull or locked dim/lock via SourceOver.",
+          "sha256": "ee2e360e0aa515d6e6fe73e1431b03962515cd8ea774c3795575fb72d8614727",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true
+        },
+        {
+          "id": "nodeStates-hospital-locked",
+          "path": "docs/design/assets/map-ui-v2/map-nodes/hospital-locked.png",
+          "width": 128,
+          "height": 128,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/ui-icons/icons/map-actions/01-hospital.png"
+          ],
+          "normalization": "NearestNeighbor icon at (23,23), 82px; hex ring; selected double ring/notch, high-risk skull or locked dim/lock via SourceOver.",
+          "sha256": "693a5c52fe127ffbd3ae2543d5458ef385af7ef2e80337bbf07d7803a8011c40",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true
+        },
+        {
+          "id": "nodeStates-hospital-selected",
+          "path": "docs/design/assets/map-ui-v2/map-nodes/hospital-selected.png",
+          "width": 128,
+          "height": 128,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/ui-icons/icons/map-actions/01-hospital.png"
+          ],
+          "normalization": "NearestNeighbor icon at (23,23), 82px; hex ring; selected double ring/notch, high-risk skull or locked dim/lock via SourceOver.",
+          "sha256": "eca81f993abe4e6ae78b05adc225b91ccb3e4bab5cd5018a4e6fd2699523115e",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true
+        },
+        {
+          "id": "nodeStates-police-station-default",
+          "path": "docs/design/assets/map-ui-v2/map-nodes/police-station-default.png",
+          "width": 128,
+          "height": 128,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/ui-icons/icons/map-actions/02-police-station.png"
+          ],
+          "normalization": "NearestNeighbor icon at (23,23), 82px; hex ring; selected double ring/notch, high-risk skull or locked dim/lock via SourceOver.",
+          "sha256": "dab101b6e505cca425a474514e14c7f15ad2b41944fb9209232ef90dcc9d9b7d",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true
+        },
+        {
+          "id": "nodeStates-police-station-high-risk",
+          "path": "docs/design/assets/map-ui-v2/map-nodes/police-station-high-risk.png",
+          "width": 128,
+          "height": 128,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/ui-icons/icons/map-actions/02-police-station.png"
+          ],
+          "normalization": "NearestNeighbor icon at (23,23), 82px; hex ring; selected double ring/notch, high-risk skull or locked dim/lock via SourceOver.",
+          "sha256": "9ba6514464c55a3ba88c7a28b8baf48273e6e226e35eda50e72715c19ddbbb3c",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true
+        },
+        {
+          "id": "nodeStates-police-station-locked",
+          "path": "docs/design/assets/map-ui-v2/map-nodes/police-station-locked.png",
+          "width": 128,
+          "height": 128,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/ui-icons/icons/map-actions/02-police-station.png"
+          ],
+          "normalization": "NearestNeighbor icon at (23,23), 82px; hex ring; selected double ring/notch, high-risk skull or locked dim/lock via SourceOver.",
+          "sha256": "1fc6ea69ab649e5efadc04ae7d0f71717075d3d334d4c45bcff182d7afead73e",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true
+        },
+        {
+          "id": "nodeStates-police-station-selected",
+          "path": "docs/design/assets/map-ui-v2/map-nodes/police-station-selected.png",
+          "width": 128,
+          "height": 128,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/ui-icons/icons/map-actions/02-police-station.png"
+          ],
+          "normalization": "NearestNeighbor icon at (23,23), 82px; hex ring; selected double ring/notch, high-risk skull or locked dim/lock via SourceOver.",
+          "sha256": "5c740c9d5446223735544a12aab3a10260c4dbc04dc7b7f0b190d66ac390dd72",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true
+        }
+      ]
+    },
+    {
+      "id": "interactableMarkers",
+      "count": 16,
+      "assets": [
+        {
+          "id": "interactableMarkers-ark",
+          "path": "docs/design/assets/map-ui-v2/markers/ark.png",
+          "width": 128,
+          "height": 128,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/ui-icons/icons/map-actions/06-ark.png"
+          ],
+          "normalization": "NearestNeighbor icon at (24,24), 80px plus semantic ring and badges; player triangle and indoor doorway/arrow are script primitives.",
+          "sha256": "755aa2015651bafab7bbd03818d7b525cf98526ee747e9946dde2608138fbf44",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "recipePath": "scripts/normalize-map-ui-v2-assets.ps1"
+        },
+        {
+          "id": "interactableMarkers-armory",
+          "path": "docs/design/assets/map-ui-v2/markers/armory.png",
+          "width": 128,
+          "height": 128,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/map-interactables/ui-markers/loot-resource/02-armory-crate.png"
+          ],
+          "normalization": "NearestNeighbor icon at (24,24), 80px plus semantic ring and badges; player triangle and indoor doorway/arrow are script primitives.",
+          "sha256": "a3021ed29a3458ac258808bde0edcc9c5988dbbf51a932fb437ea71866d8f321",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "recipePath": "scripts/normalize-map-ui-v2-assets.ps1"
+        },
+        {
+          "id": "interactableMarkers-crane",
+          "path": "docs/design/assets/map-ui-v2/markers/crane.png",
+          "width": 128,
+          "height": 128,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/map-interactables/ui-markers/facility-event/12-crane-control.png"
+          ],
+          "normalization": "NearestNeighbor icon at (24,24), 80px plus semantic ring and badges; player triangle and indoor doorway/arrow are script primitives.",
+          "sha256": "0f6e0d192f35af12b23a9cfc2d0c3197b5bf6d0b75391ea06cf412255ec37a3f",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "recipePath": "scripts/normalize-map-ui-v2-assets.ps1"
+        },
+        {
+          "id": "interactableMarkers-evacuation",
+          "path": "docs/design/assets/map-ui-v2/markers/evacuation.png",
+          "width": 128,
+          "height": 128,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/ui-icons/icons/map-actions/16-evacuation.png"
+          ],
+          "normalization": "NearestNeighbor icon at (24,24), 80px plus semantic ring and badges; player triangle and indoor doorway/arrow are script primitives.",
+          "sha256": "b594dc4cc7eec8f34db26a095d0c45ed520bdbee1e18cf65bcbb51d40879a72f",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "recipePath": "scripts/normalize-map-ui-v2-assets.ps1"
+        },
+        {
+          "id": "interactableMarkers-high-risk-route",
+          "path": "docs/design/assets/map-ui-v2/markers/high-risk-route.png",
+          "width": 128,
+          "height": 128,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/ui-icons/icons/map-actions/09-high-risk-route.png"
+          ],
+          "normalization": "NearestNeighbor icon at (24,24), 80px plus semantic ring and badges; player triangle and indoor doorway/arrow are script primitives.",
+          "sha256": "d63b1813a42b9dbd4c69c58d8deb0b64e5a9413438d078f2157825bb7dbc15a6",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "recipePath": "scripts/normalize-map-ui-v2-assets.ps1"
+        },
+        {
+          "id": "interactableMarkers-indoor-entrance",
+          "path": "docs/design/assets/map-ui-v2/markers/indoor-entrance.png",
+          "width": 128,
+          "height": 128,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [],
+          "normalization": "NearestNeighbor icon at (24,24), 80px plus semantic ring and badges; player triangle and indoor doorway/arrow are script primitives.",
+          "sha256": "1e8a61cc9a5e36037e89a0f7be7af87838d4ae6cf6da56cde0706536402eaf10",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "recipePath": "scripts/normalize-map-ui-v2-assets.ps1"
+        },
+        {
+          "id": "interactableMarkers-keycard",
+          "path": "docs/design/assets/map-ui-v2/markers/keycard.png",
+          "width": 128,
+          "height": 128,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/map-interactables/ui-markers/facility-event/06-keycard-reader.png"
+          ],
+          "normalization": "NearestNeighbor icon at (24,24), 80px plus semantic ring and badges; player triangle and indoor doorway/arrow are script primitives.",
+          "sha256": "081b8fd47d620d738c9e7214332d6b6241429ca2b8bcaf1f2255669890258dc0",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "recipePath": "scripts/normalize-map-ui-v2-assets.ps1"
+        },
+        {
+          "id": "interactableMarkers-locked-area",
+          "path": "docs/design/assets/map-ui-v2/markers/locked-area.png",
+          "width": 128,
+          "height": 128,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/map-interactables/ui-markers/facility-event/05-locked-door.png"
+          ],
+          "normalization": "NearestNeighbor icon at (24,24), 80px plus semantic ring and badges; player triangle and indoor doorway/arrow are script primitives.",
+          "sha256": "e157c92c2df02ccdb02097854bc4a0883f1437cc11990cd67658542338ecf335",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "recipePath": "scripts/normalize-map-ui-v2-assets.ps1"
+        },
+        {
+          "id": "interactableMarkers-noise",
+          "path": "docs/design/assets/map-ui-v2/markers/noise.png",
+          "width": 128,
+          "height": 128,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/ui-icons/icons/attributes-crafting/10-noise.png"
+          ],
+          "normalization": "NearestNeighbor icon at (24,24), 80px plus semantic ring and badges; player triangle and indoor doorway/arrow are script primitives.",
+          "sha256": "6e25de7bed268ad8079826883d5032a5a0a54da9b9074eeff4a626fb2bafa788",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "recipePath": "scripts/normalize-map-ui-v2-assets.ps1"
+        },
+        {
+          "id": "interactableMarkers-objective",
+          "path": "docs/design/assets/map-ui-v2/markers/objective.png",
+          "width": 128,
+          "height": 128,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/ui-icons/icons/map-actions/07-objective-pin.png"
+          ],
+          "normalization": "NearestNeighbor icon at (24,24), 80px plus semantic ring and badges; player triangle and indoor doorway/arrow are script primitives.",
+          "sha256": "d12643a9486384c54da26dc969ee5c44385c59e3d01a50da81500399a2af0d01",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "recipePath": "scripts/normalize-map-ui-v2-assets.ps1"
+        },
+        {
+          "id": "interactableMarkers-player",
+          "path": "docs/design/assets/map-ui-v2/markers/player.png",
+          "width": 128,
+          "height": 128,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [],
+          "normalization": "NearestNeighbor icon at (24,24), 80px plus semantic ring and badges; player triangle and indoor doorway/arrow are script primitives.",
+          "sha256": "c683cfdc36710f39e8fb0e97ba90993e5d934cea4526a6c0bfb60240db58ab46",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "recipePath": "scripts/normalize-map-ui-v2-assets.ps1"
+        },
+        {
+          "id": "interactableMarkers-pollution",
+          "path": "docs/design/assets/map-ui-v2/markers/pollution.png",
+          "width": 128,
+          "height": 128,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/ui-icons/icons/enemies-status/08-contamination.png"
+          ],
+          "normalization": "NearestNeighbor icon at (24,24), 80px plus semantic ring and badges; player triangle and indoor doorway/arrow are script primitives.",
+          "sha256": "b54de3eda21a3a4887867c83631546d954187504f474dec69ca2453b063ee53a",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "recipePath": "scripts/normalize-map-ui-v2-assets.ps1"
+        },
+        {
+          "id": "interactableMarkers-power",
+          "path": "docs/design/assets/map-ui-v2/markers/power.png",
+          "width": 128,
+          "height": 128,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/ui-icons/icons/attributes-crafting/09-power.png"
+          ],
+          "normalization": "NearestNeighbor icon at (24,24), 80px plus semantic ring and badges; player triangle and indoor doorway/arrow are script primitives.",
+          "sha256": "c3d8f6609dd0a479da324581d245afe8e19b188297ae831c2ca6bfe2a5bcd13e",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "recipePath": "scripts/normalize-map-ui-v2-assets.ps1"
+        },
+        {
+          "id": "interactableMarkers-rescue",
+          "path": "docs/design/assets/map-ui-v2/markers/rescue.png",
+          "width": 128,
+          "height": 128,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/ui-icons/icons/map-actions/11-rescue.png"
+          ],
+          "normalization": "NearestNeighbor icon at (24,24), 80px plus semantic ring and badges; player triangle and indoor doorway/arrow are script primitives.",
+          "sha256": "004a90dc26fdea3b48b45b48ba105f5bae34ad43de4abcc837d2a2c8007b35f7",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "recipePath": "scripts/normalize-map-ui-v2-assets.ps1"
+        },
+        {
+          "id": "interactableMarkers-safe-route",
+          "path": "docs/design/assets/map-ui-v2/markers/safe-route.png",
+          "width": 128,
+          "height": 128,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/ui-icons/icons/map-actions/08-safe-route.png"
+          ],
+          "normalization": "NearestNeighbor icon at (24,24), 80px plus semantic ring and badges; player triangle and indoor doorway/arrow are script primitives.",
+          "sha256": "59120a44350df1d76e418bc35697dc5b746dc065a1721c2f6c430644c9fed0c8",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "recipePath": "scripts/normalize-map-ui-v2-assets.ps1"
+        },
+        {
+          "id": "interactableMarkers-search",
+          "path": "docs/design/assets/map-ui-v2/markers/search.png",
+          "width": 128,
+          "height": 128,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/ui-icons/icons/map-actions/10-search.png"
+          ],
+          "normalization": "NearestNeighbor icon at (24,24), 80px plus semantic ring and badges; player triangle and indoor doorway/arrow are script primitives.",
+          "sha256": "e7089e6a3dba0b8b4e2b60e6f74fe8d77f729b8b93b6008a774de9c70f17d6ae",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "recipePath": "scripts/normalize-map-ui-v2-assets.ps1"
+        }
+      ]
+    },
+    {
+      "id": "routeOverlays",
+      "count": 3,
+      "assets": [
+        {
+          "id": "routeOverlays-high-risk-route",
+          "path": "docs/design/assets/map-ui-v2/route-overlays/high-risk-route.png",
+          "width": 1024,
+          "height": 128,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [],
+          "normalization": "Script primitives: low-alpha glow, solid cyan safe line, dashed yellow recommended arrows or magenta danger chevrons; SourceOver.",
+          "sha256": "1158fd63a5af733135d0a528091e2f2892e82eec6dcefb5a9121186d45f14989",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "recipePath": "scripts/normalize-map-ui-v2-assets.ps1"
+        },
+        {
+          "id": "routeOverlays-recommended-route",
+          "path": "docs/design/assets/map-ui-v2/route-overlays/recommended-route.png",
+          "width": 1024,
+          "height": 128,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [],
+          "normalization": "Script primitives: low-alpha glow, solid cyan safe line, dashed yellow recommended arrows or magenta danger chevrons; SourceOver.",
+          "sha256": "1b4e4b935b177f4b9bd3b4f988ae79041f2195928ddef19af18d8271276f8884",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "recipePath": "scripts/normalize-map-ui-v2-assets.ps1"
+        },
+        {
+          "id": "routeOverlays-safe-route",
+          "path": "docs/design/assets/map-ui-v2/route-overlays/safe-route.png",
+          "width": 1024,
+          "height": 128,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [],
+          "normalization": "Script primitives: low-alpha glow, solid cyan safe line, dashed yellow recommended arrows or magenta danger chevrons; SourceOver.",
+          "sha256": "a5019b0356e1aa3b6c55f1bdfddf1e3d9ab7ea3d7694df231d4f2adf346bb721",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "recipePath": "scripts/normalize-map-ui-v2-assets.ps1"
+        }
+      ]
+    },
+    {
+      "id": "hazardOverlays",
+      "count": 3,
+      "assets": [
+        {
+          "id": "hazardOverlays-high-noise",
+          "path": "docs/design/assets/map-ui-v2/hazard-overlays/high-noise.png",
+          "width": 512,
+          "height": 512,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [],
+          "normalization": "Script primitives: organic pollution hatch, rectangular lock cross-hatch or concentric noise pulses; low-alpha SourceOver, maximum alpha 114/255.",
+          "sha256": "d886de2fdbe3907cb9e4f026a1c0eddffe8bdd78fb7f7caa144f712b2e3bd3b5",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "recipePath": "scripts/normalize-map-ui-v2-assets.ps1"
+        },
+        {
+          "id": "hazardOverlays-locked-area",
+          "path": "docs/design/assets/map-ui-v2/hazard-overlays/locked-area.png",
+          "width": 512,
+          "height": 512,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [],
+          "normalization": "Script primitives: organic pollution hatch, rectangular lock cross-hatch or concentric noise pulses; low-alpha SourceOver, maximum alpha 114/255.",
+          "sha256": "948ebae0da8a07be7c35558b8d0998243243d14dd78e916345e906d9a5a61907",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "recipePath": "scripts/normalize-map-ui-v2-assets.ps1"
+        },
+        {
+          "id": "hazardOverlays-pollution",
+          "path": "docs/design/assets/map-ui-v2/hazard-overlays/pollution.png",
+          "width": 512,
+          "height": 512,
+          "colorMode": "RGBA",
+          "alphaRequired": true,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [],
+          "normalization": "Script primitives: organic pollution hatch, rectangular lock cross-hatch or concentric noise pulses; low-alpha SourceOver, maximum alpha 114/255.",
+          "sha256": "e1685149f6a71b8efa9e747e8e649b1e68359bfc214cc8834f96663c4c2e600f",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "recipePath": "scripts/normalize-map-ui-v2-assets.ps1"
+        }
+      ]
+    },
+    {
+      "id": "previews",
+      "count": 6,
+      "assets": [
+        {
+          "id": "previews-interactables",
+          "path": "docs/design/assets/map-ui-v2/previews/interactables.png",
+          "width": 960,
+          "height": 660,
+          "colorMode": "RGBA",
+          "alphaRequired": false,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/map-ui-v2/interactables/hospital/08-medical-cabinet.png",
+            "docs/design/assets/map-ui-v2/interactables/hospital/03-purifier.png",
+            "docs/design/assets/map-ui-v2/interactables/hospital/14-rescue-beacon.png",
+            "docs/design/assets/map-ui-v2/interactables/hospital/16-extraction-beacon.png",
+            "docs/design/assets/map-ui-v2/interactables/police-station/02-armory-crate.png",
+            "docs/design/assets/map-ui-v2/interactables/police-station/05-locked-door.png",
+            "docs/design/assets/map-ui-v2/interactables/police-station/06-keycard-reader.png",
+            "docs/design/assets/map-ui-v2/interactables/police-station/07-weapon-case.png",
+            "docs/design/assets/map-ui-v2/interactables/factory/01-power-junction.png",
+            "docs/design/assets/map-ui-v2/interactables/factory/02-generator.png",
+            "docs/design/assets/map-ui-v2/interactables/factory/12-crane-control.png",
+            "docs/design/assets/map-ui-v2/interactables/factory/11-electronics-cache.png"
+          ],
+          "normalization": "Sorted contact sheet; opaque checkerboard, SourceOver thumbnails, Consolas 10px labels.",
+          "sha256": "73ef2ea4a6ee8dc00e92538024672e6a42a447e49640839528eefaf179843951",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "recipePath": "scripts/normalize-map-ui-v2-assets.ps1"
+        },
+        {
+          "id": "previews-maps",
+          "path": "docs/design/assets/map-ui-v2/previews/maps.png",
+          "width": 800,
+          "height": 1410,
+          "colorMode": "RGBA",
+          "alphaRequired": false,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/map-ui-v2/maps/01-hospital-day.png",
+            "docs/design/assets/map-ui-v2/maps/02-police-station-day.png",
+            "docs/design/assets/map-ui-v2/maps/03-factory-day.png"
+          ],
+          "normalization": "Sorted contact sheet; opaque checkerboard, SourceOver thumbnails, Consolas 10px labels.",
+          "sha256": "a5a1aae0339bea56562339a72c627bca1d184eee78652c462420052bc42fb3ca",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "recipePath": "scripts/normalize-map-ui-v2-assets.ps1"
+        },
+        {
+          "id": "previews-markers",
+          "path": "docs/design/assets/map-ui-v2/previews/markers.png",
+          "width": 840,
+          "height": 720,
+          "colorMode": "RGBA",
+          "alphaRequired": false,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/map-ui-v2/markers/ark.png",
+            "docs/design/assets/map-ui-v2/markers/armory.png",
+            "docs/design/assets/map-ui-v2/markers/crane.png",
+            "docs/design/assets/map-ui-v2/markers/evacuation.png",
+            "docs/design/assets/map-ui-v2/markers/high-risk-route.png",
+            "docs/design/assets/map-ui-v2/markers/indoor-entrance.png",
+            "docs/design/assets/map-ui-v2/markers/keycard.png",
+            "docs/design/assets/map-ui-v2/markers/locked-area.png",
+            "docs/design/assets/map-ui-v2/markers/noise.png",
+            "docs/design/assets/map-ui-v2/markers/objective.png",
+            "docs/design/assets/map-ui-v2/markers/player.png",
+            "docs/design/assets/map-ui-v2/markers/pollution.png",
+            "docs/design/assets/map-ui-v2/markers/power.png",
+            "docs/design/assets/map-ui-v2/markers/rescue.png",
+            "docs/design/assets/map-ui-v2/markers/safe-route.png",
+            "docs/design/assets/map-ui-v2/markers/search.png"
+          ],
+          "normalization": "Sorted contact sheet; opaque checkerboard, SourceOver thumbnails, Consolas 10px labels.",
+          "sha256": "a69fb62a09e53c2894810a4fb4a69e22c26bc308df0df258aa5f4888d6a2bfdc",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "recipePath": "scripts/normalize-map-ui-v2-assets.ps1"
+        },
+        {
+          "id": "previews-mockups",
+          "path": "docs/design/assets/map-ui-v2/previews/mockups.png",
+          "width": 1600,
+          "height": 1880,
+          "colorMode": "RGBA",
+          "alphaRequired": false,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/map-ui-v2/mockups/01-region-overview-ui.png",
+            "docs/design/assets/map-ui-v2/mockups/02-hospital-selected-ui.png",
+            "docs/design/assets/map-ui-v2/mockups/03-police-selected-ui.png",
+            "docs/design/assets/map-ui-v2/mockups/04-factory-selected-ui.png",
+            "docs/design/assets/map-ui-v2/mockups/05-hospital-exploration-ui.png",
+            "docs/design/assets/map-ui-v2/mockups/06-police-exploration-ui.png",
+            "docs/design/assets/map-ui-v2/mockups/07-factory-exploration-ui.png"
+          ],
+          "normalization": "Sorted contact sheet; opaque checkerboard, SourceOver thumbnails, Consolas 10px labels.",
+          "sha256": "50deeeae21ac4734bc7c5c10b563d2ff78a6bfac53c19015aa80afab5be0d41a",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "recipePath": "scripts/normalize-map-ui-v2-assets.ps1"
+        },
+        {
+          "id": "previews-nodes",
+          "path": "docs/design/assets/map-ui-v2/previews/nodes.png",
+          "width": 840,
+          "height": 540,
+          "colorMode": "RGBA",
+          "alphaRequired": false,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/map-ui-v2/map-nodes/factory-default.png",
+            "docs/design/assets/map-ui-v2/map-nodes/factory-high-risk.png",
+            "docs/design/assets/map-ui-v2/map-nodes/factory-locked.png",
+            "docs/design/assets/map-ui-v2/map-nodes/factory-selected.png",
+            "docs/design/assets/map-ui-v2/map-nodes/hospital-default.png",
+            "docs/design/assets/map-ui-v2/map-nodes/hospital-high-risk.png",
+            "docs/design/assets/map-ui-v2/map-nodes/hospital-locked.png",
+            "docs/design/assets/map-ui-v2/map-nodes/hospital-selected.png",
+            "docs/design/assets/map-ui-v2/map-nodes/police-station-default.png",
+            "docs/design/assets/map-ui-v2/map-nodes/police-station-high-risk.png",
+            "docs/design/assets/map-ui-v2/map-nodes/police-station-locked.png",
+            "docs/design/assets/map-ui-v2/map-nodes/police-station-selected.png"
+          ],
+          "normalization": "Sorted contact sheet; opaque checkerboard, SourceOver thumbnails, Consolas 10px labels.",
+          "sha256": "44871719178e1cafcf255806e3f9eec348b94acf6427da27fad3e4b63e5d054c",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "recipePath": "scripts/normalize-map-ui-v2-assets.ps1"
+        },
+        {
+          "id": "previews-routes-hazards",
+          "path": "docs/design/assets/map-ui-v2/previews/routes-hazards.png",
+          "width": 1080,
+          "height": 600,
+          "colorMode": "RGBA",
+          "alphaRequired": false,
+          "sourceType": "deterministic-derivative",
+          "sourcePaths": [
+            "docs/design/assets/map-ui-v2/route-overlays/high-risk-route.png",
+            "docs/design/assets/map-ui-v2/route-overlays/recommended-route.png",
+            "docs/design/assets/map-ui-v2/route-overlays/safe-route.png",
+            "docs/design/assets/map-ui-v2/hazard-overlays/high-noise.png",
+            "docs/design/assets/map-ui-v2/hazard-overlays/locked-area.png",
+            "docs/design/assets/map-ui-v2/hazard-overlays/pollution.png"
+          ],
+          "normalization": "Sorted contact sheet; opaque checkerboard, SourceOver thumbnails, Consolas 10px labels.",
+          "sha256": "6c0d0e7b91b135313c5103b6649454999ec2f35db09d7dc4df80089645288539",
+          "reviewStatus": "internal-visual-validation",
+          "commercialReleaseReviewRequired": true,
+          "recipePath": "scripts/normalize-map-ui-v2-assets.ps1"
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "reviewStatus": "internal-visual-validation",
+    "commercialReleaseReviewRequired": true,
+    "reviewScope": "Producer native-size visual review and Task 3 contact-sheet review; automated structure and repeatability validation. No Cocos runtime or navigation-mesh certification.",
+    "rebuildScript": "scripts/normalize-map-ui-v2-assets.ps1",
+    "testScript": "scripts/test-map-ui-v2-assets.ps1",
+    "sourceGenerationCount": 15,
+    "distributedPngCount": 78,
+    "derivedAndReusedPngCount": 68,
+    "limits": [
+      "Generated mockup spacing is visually consistent, not pixel-identical.",
+      "Minimaps are schematic; runtime labels, values, navigation and input must use code-native components.",
+      "Windows/System.Drawing and installed Consolas determine deterministic preview bytes."
+    ],
+    "upstreamManifests": [
+      "docs/design/assets/ui-icons/icon-manifest.json",
+      "docs/design/assets/world-characters-monsters/asset-manifest.json",
+      "docs/design/assets/map-interactables/asset-manifest.json"
+    ]
+  }
+}
