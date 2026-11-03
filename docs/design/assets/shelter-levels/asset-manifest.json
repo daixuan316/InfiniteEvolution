@@ -1,0 +1,188 @@
+{
+  "schemaVersion": 1,
+  "libraryId": "infinite-evolution-shelter-levels-v1",
+  "generatedAt": "2026-11-03",
+  "sourceTool": "Codex built-in image generation",
+  "styleReferences": [
+    "../ui-main-gameplay-topdown-v1.png",
+    "../ui-mockups/03-dusk-ark-layout.png",
+    "../ui-mockups/10-ark-home-hub.png",
+    "../world-characters-monsters/maps/03-ark-rooftop-night.png"
+  ],
+  "formats": {
+    "uiMockup": {
+      "width": 1334,
+      "height": 750,
+      "colorMode": "RGBA",
+      "purpose": "visual reference only; functional text and controls remain code-native"
+    },
+    "arkBase": {
+      "width": 768,
+      "height": 512,
+      "colorMode": "RGBA",
+      "transparent": true,
+      "pivot": "bottom-center"
+    },
+    "module": {
+      "width": 256,
+      "height": 256,
+      "colorMode": "RGBA",
+      "transparent": true,
+      "pivot": "bottom-center"
+    },
+    "overlay": {
+      "width": 256,
+      "height": 256,
+      "colorMode": "RGBA",
+      "transparent": true,
+      "pivot": "center"
+    }
+  },
+  "uiStages": [
+    {
+      "level": 1,
+      "id": "modified-transport",
+      "source": "source-sheets/01-ui-modified-transport.png",
+      "output": "ui-mockups/01-modified-transport.png"
+    },
+    {
+      "level": 2,
+      "id": "armored-tracked-fortress",
+      "source": "source-sheets/02-ui-armored-tracked-fortress.png",
+      "output": "ui-mockups/02-armored-tracked-fortress.png"
+    },
+    {
+      "level": 3,
+      "id": "mobile-industrial-platform",
+      "source": "source-sheets/03-ui-mobile-industrial-platform.png",
+      "output": "ui-mockups/03-mobile-industrial-platform.png"
+    },
+    {
+      "level": 4,
+      "id": "biomechanical-ark",
+      "source": "source-sheets/04-ui-biomechanical-ark.png",
+      "output": "ui-mockups/04-biomechanical-ark.png"
+    },
+    {
+      "level": 5,
+      "id": "doomsday-mobile-citadel",
+      "source": "source-sheets/05-ui-doomsday-mobile-citadel.png",
+      "output": "ui-mockups/05-doomsday-mobile-citadel.png"
+    }
+  ],
+  "groups": [
+    {
+      "id": "ark-bases",
+      "source": "source-sheets/06-ark-level-bases.png",
+      "grid": { "columns": 2, "rows": 3, "ordering": "row-major", "usedCells": 5 },
+      "outputFolder": "ark-bases",
+      "filenamePattern": "{index:00}-{id}.png",
+      "ids": [
+        "modified-transport",
+        "armored-tracked-fortress",
+        "mobile-industrial-platform",
+        "biomechanical-ark",
+        "doomsday-mobile-citadel"
+      ]
+    },
+    {
+      "id": "structural-utility-modules",
+      "source": "source-sheets/07-structural-utility-modules.png",
+      "grid": { "columns": 4, "rows": 4, "ordering": "row-major", "usedCells": 16 },
+      "outputFolder": "modules/structural-utility",
+      "filenamePattern": "{index:00}-{id}.png",
+      "ids": [
+        "core-reactor",
+        "generator",
+        "battery-bank",
+        "workshop",
+        "storage",
+        "infirmary",
+        "purifier",
+        "radar",
+        "research-lab",
+        "crew-quarters",
+        "command-console",
+        "drone-repair-dock",
+        "crane",
+        "armor-panel",
+        "power-junction",
+        "hatch-ladder"
+      ]
+    },
+    {
+      "id": "defense-evolution-modules",
+      "source": "source-sheets/08-defense-evolution-modules.png",
+      "grid": { "columns": 4, "rows": 4, "ordering": "row-major", "usedCells": 16 },
+      "outputFolder": "modules/defense-evolution",
+      "filenamePattern": "{index:00}-{id}.png",
+      "ids": [
+        "machine-gun-turret",
+        "shotgun-turret",
+        "flame-turret",
+        "emp-turret",
+        "missile-rack",
+        "heavy-cannon",
+        "drone-platform",
+        "electric-fence-node",
+        "spike-barricade",
+        "shield-emitter",
+        "lure-beacon",
+        "regenerative-armor",
+        "hunter-gland",
+        "sensory-organ",
+        "electric-sac",
+        "symbiosis-pod"
+      ]
+    },
+    {
+      "id": "interaction-state-overlays",
+      "source": "source-sheets/09-interaction-state-overlays.png",
+      "grid": { "columns": 4, "rows": 4, "ordering": "row-major", "usedCells": 16 },
+      "outputFolder": "overlays",
+      "filenamePattern": "{index:00}-{id}.png",
+      "ids": [
+        "selected",
+        "placement-valid",
+        "placement-invalid",
+        "locked",
+        "upgrade-ready",
+        "powered",
+        "unpowered",
+        "overloaded",
+        "damaged",
+        "critical",
+        "offline",
+        "auto-repair",
+        "parasite",
+        "bio-unstable",
+        "adjacency-bonus",
+        "range-sector"
+      ]
+    }
+  ],
+  "runtimeRules": {
+    "layerOrder": [
+      "ark-base",
+      "installed-module",
+      "power-and-bio-lines",
+      "durability-state",
+      "power-state",
+      "repair-or-bio-state",
+      "selection-and-placement",
+      "code-native-labels-and-bars"
+    ],
+    "exclusivePriorities": {
+      "durability": ["critical", "damaged"],
+      "power": ["overloaded", "powered", "unpowered", "offline"],
+      "placement": ["placement-invalid", "placement-valid", "selected"]
+    },
+    "repairPresentation": "remote automatic drone only; never depict a character manually repairing"
+  },
+  "provenance": {
+    "sourceType": "ai-generated",
+    "normalization": "center crop plus deterministic 2x3 and 4x4 slicing with nearest-neighbor resize",
+    "reviewStatus": "internal-visual-validation",
+    "commercialReleaseReviewRequired": true
+  }
+}
