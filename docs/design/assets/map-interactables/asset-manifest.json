@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "libraryId": "infinite-evolution-map-interactables-v1",
+  "generatedAt": "2026-11-03",
+  "sourceTool": "Codex built-in image generation",
+  "styleReferences": [
+    "../ui-main-gameplay-topdown-v1.png",
+    "../ui-icons/source-sheets/02-system-nav.png",
+    "../ui-icons/source-sheets/03-resources-items.png",
+    "../world-characters-monsters/maps/02-hospital-district-day.png"
+  ],
+  "formats": {
+    "uiMarker": { "width": 128, "height": 128, "colorMode": "RGBA", "transparent": true },
+    "worldProp": { "width": 256, "height": 256, "colorMode": "RGBA", "transparent": true },
+    "sourceGrid": { "columns": 4, "rows": 4, "ordering": "row-major" }
+  },
+  "groups": [
+    {
+      "id": "loot-resource",
+      "uiSource": "source-sheets/01-ui-loot-resource.png",
+      "worldSource": "source-sheets/03-world-loot-resource.png",
+      "ids": ["supply-crate", "armory-crate", "bio-crate", "heavy-safe", "airdrop-crate", "hidden-cache", "weapon-case", "medical-cabinet", "scrap-pile", "alloy-stack", "electronics-cache", "energy-cell-crate", "fuel-drum", "ration-box", "blueprint-tube", "mutation-pod"]
+    },
+    {
+      "id": "facility-event",
+      "uiSource": "source-sheets/02-ui-facility-event.png",
+      "worldSource": "source-sheets/04-world-facility-event.png",
+      "ids": ["power-junction", "generator", "purifier", "repair-terminal", "locked-door", "keycard-reader", "breakable-barrier", "movable-cart", "elevator-console", "rail-switch", "drainage-valve", "crane-control", "radar-terminal", "rescue-beacon", "turret-socket", "extraction-beacon"]
+    }
+  ],
+  "provenance": {
+    "sourceType": "ai-generated",
+    "normalization": "deterministic 4x4 slicing and nearest-neighbor resize",
+    "reviewStatus": "internal-visual-validation",
+    "commercialReleaseReviewRequired": true
+  }
+}
+
