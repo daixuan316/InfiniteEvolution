@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "libraryId": "infinite-evolution-world-character-monster-v1",
+  "generatedAt": "2026-11-03",
+  "sourceTool": "Codex built-in image generation",
+  "styleReference": "../ui-main-gameplay-topdown-v1.png",
+  "assets": {
+    "maps": {
+      "size": [1334, 750],
+      "alphaRequired": false,
+      "ids": ["grey-harbor-region-map", "hospital-district-day", "ark-rooftop-night"]
+    },
+    "locationThumbnails": {
+      "squareSize": [512, 512],
+      "wideSize": [512, 288],
+      "alphaRequired": false,
+      "ids": ["hospital", "supermarket", "police-station", "factory", "laboratory", "subway"]
+    },
+    "monsterTopdown": {
+      "size": [256, 256],
+      "alphaRequired": true,
+      "ids": ["walker", "runner", "brute", "spitter", "screamer", "climber", "burrower", "parasite", "bomber", "boss-butcher-matriarch", "boss-acid-rain-bladder", "boss-subway-devourer", "boss-hivemind-beacon", "boss-prime-evolution", "infected-nest"]
+    },
+    "monsterPortraits": {
+      "size": [256, 256],
+      "alphaRequired": true,
+      "ids": ["walker", "runner", "brute", "spitter", "screamer", "elite", "butcher-matriarch", "infected-nest"]
+    },
+    "characterTopdown": {
+      "size": [256, 256],
+      "alphaRequired": true,
+      "ids": ["engineer", "doctor", "scout", "gunsmith", "biologist", "guard", "player-idle", "player-fire", "player-dodge", "player-interact"]
+    },
+    "characterPortraits": {
+      "size": [256, 256],
+      "alphaRequired": true,
+      "ids": ["engineer", "doctor", "scout", "gunsmith", "biologist", "guard"]
+    }
+  },
+  "provenance": {
+    "sourceType": "ai-generated",
+    "normalization": "deterministic grid slicing, center cover crop, and nearest-neighbor resize",
+    "reviewStatus": "internal-visual-validation",
+    "commercialReleaseReviewRequired": true
+  }
+}
+
