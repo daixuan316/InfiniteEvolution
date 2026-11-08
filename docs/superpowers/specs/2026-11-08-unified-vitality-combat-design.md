@@ -2,7 +2,8 @@
 
 **日期：** 2026-11-08  
 **项目：** 无限进化·末世生存  
-**引擎：** Cocos Creator 3.8.8、TypeScript、Oops Framework
+**引擎：** Cocos Creator 3.8.8、TypeScript、Oops Framework  
+**状态：** 已确认，可进入实现计划
 
 ## 1. 目标与范围
 
