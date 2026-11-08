@@ -7,6 +7,7 @@ import { HallViewComp } from "../../hall/HallViewComp";
 import { ConfirmDialogViewComp } from "../../ui/ConfirmDialogViewComp";
 import { FeaturePageViewComp } from "../../ui/FeaturePageViewComp";
 import { PauseOverlayViewComp } from "../../ui/PauseOverlayViewComp";
+import { WorkshopViewComp } from "../../ui/WorkshopViewComp";
 import { UIID } from "../config/GameUIConfig";
 import type { RouteKey } from "./NavigationStack.ts";
 import { UIPageBootstrap } from "./UIPageBootstrap";
@@ -34,7 +35,7 @@ export const uiNavigation = new UINavigationService(new OopsUIGateway(), UIID.Ha
 
 UIPageBootstrap.register(UIID.Hall, HallViewComp);
 UIPageBootstrap.register(UIID.Equipment, FeaturePageViewComp);
-UIPageBootstrap.register(UIID.Workshop, FeaturePageViewComp);
+UIPageBootstrap.register(UIID.Workshop, WorkshopViewComp);
 UIPageBootstrap.register(UIID.ArkBuild, FeaturePageViewComp);
 UIPageBootstrap.register(UIID.Research, FeaturePageViewComp);
 UIPageBootstrap.register(UIID.Crew, FeaturePageViewComp);
