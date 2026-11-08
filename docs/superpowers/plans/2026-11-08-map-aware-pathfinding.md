@@ -92,6 +92,7 @@ export interface MapObstacle {
     readonly blockId: string;
     readonly kind: ObstacleKind;
     readonly shape: ObstacleShape;
+    readonly center: WorldPoint;
 }
 
 export interface BattleMapDefinition {
@@ -166,6 +167,11 @@ export interface NavigationAgent { readonly radius: number; }
 export interface DynamicObstacle { readonly id: string; readonly shape: ObstacleShape; }
 
 export class NavigationGrid {
+    static empty(columns: number, rows: number, cellSize: number): NavigationGrid;
+    static fromShapes(
+        bounds: Readonly<{ width: number; height: number; cellSize: number }>,
+        obstacles: readonly DynamicObstacle[],
+    ): NavigationGrid;
     readonly columns: number;
     readonly rows: number;
     readonly cellSize: number;
@@ -301,7 +307,7 @@ git commit -m "feat: smooth connected navigation paths"
 
 **Interfaces:**
 - Consumes: `NavigationGrid`、`GridPathfinder.findWorldPath()` 和 `PathResult.navigationVersion`。
-- Produces: `BattleSimulation.navigation`、`playerPath`（世界航点）、`playerRawPath`、`addDynamicObstacle()`、`removeDynamicObstacle()`。
+- Produces: `BattleSimulation.navigation`、`playerPath`（世界航点）、`playerRawPath`、`playerPathVersion`、`addDynamicObstacle()`、`removeDynamicObstacle()`。
 
 - [ ] **Step 1: Write failing player navigation tests**
 
