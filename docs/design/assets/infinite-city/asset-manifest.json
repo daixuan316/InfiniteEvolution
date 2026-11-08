@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "generatedAt": "2026-11-09",
+  "generator": "OpenAI built-in image generation",
+  "styleReference": "docs/design/assets/world-characters-monsters/maps/02-hospital-district-day.png",
+  "assets": [
+    {
+      "id": "residential-district-a",
+      "district": "residential",
+      "width": 1344,
+      "height": 768,
+      "connectors": ["north", "east", "south", "west"],
+      "resourceKey": "gui/battle-hud/texture/residential-district-a",
+      "content": "low-rise apartments, row houses, courtyards and parking"
+    },
+    {
+      "id": "residential-district-b",
+      "district": "residential",
+      "width": 1344,
+      "height": 768,
+      "connectors": ["north", "east", "south", "west"],
+      "resourceKey": "gui/battle-hud/texture/residential-district-b",
+      "content": "denser apartments, row houses, playground and overgrown courtyards"
+    },
+    {
+      "id": "neighborhood-commercial-a",
+      "district": "community",
+      "width": 1344,
+      "height": 768,
+      "connectors": ["north", "east", "south", "west"],
+      "resourceKey": "gui/battle-hud/texture/neighborhood-commercial-a",
+      "content": "housing with convenience retail, garage, fuel canopy and parking"
+    }
+  ]
+}
