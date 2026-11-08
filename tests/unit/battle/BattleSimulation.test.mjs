@@ -331,8 +331,9 @@ test("projectile impact emits actual health damage", () => {
     assert.equal(event.targetId, enemy.id);
     assert.equal(event.shieldDamage, 0);
     assert.equal(event.healthDamage, event.amount);
-    assert.ok(Math.abs(event.x - enemy.x) <= enemy.speed / 60);
-    assert.ok(Math.abs(event.y - enemy.y) <= enemy.speed / 60);
+    const movementTolerance = enemy.speed / 60 + 1e-9;
+    assert.ok(Math.abs(event.x - enemy.x) <= movementTolerance);
+    assert.ok(Math.abs(event.y - enemy.y) <= movementTolerance);
 });
 
 test("melee event reports shield absorption and clears next frame", () => {

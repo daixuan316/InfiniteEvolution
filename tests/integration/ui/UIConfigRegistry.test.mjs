@@ -12,6 +12,7 @@ const routes = [
     ["Crew", "gui/crew/crew"],
     ["Intel", "gui/intel/intel"],
     ["BattleHUD", "gui/battle-hud/battle-hud"],
+    ["NightDefense", "gui/night-defense/night-defense"],
     ["PauseOverlay", "gui/pause/pause"],
     ["ConfirmDialog", "gui/confirm/confirm"],
 ];
@@ -27,7 +28,7 @@ test("full-screen cached pages and transient overlays use distinct lifetime rule
     for (const uiid of ["Hall", "Equipment", "Workshop", "ArkBuild", "Research", "Crew", "Intel"]) {
         assert.match(source, new RegExp(`UIID\\.${uiid}\\]: \\{[^}]*destroy: false`), uiid);
     }
-    for (const uiid of ["BattleHUD", "PauseOverlay", "ConfirmDialog"]) {
+    for (const uiid of ["BattleHUD", "NightDefense", "PauseOverlay", "ConfirmDialog"]) {
         assert.match(source, new RegExp(`UIID\\.${uiid}\\]: \\{[^}]*destroy: true`), uiid);
     }
 });

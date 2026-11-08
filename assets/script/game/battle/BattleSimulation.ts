@@ -10,6 +10,7 @@ import type {
 import { GridPathfinder } from "./GridPathfinder.ts";
 import { resolveDamage } from "../combat/DamageResolver.ts";
 import { VitalityRuntime, type VitalityChangeResult } from "../combat/Vitality.ts";
+import { createFirstNightHorde, type HordeDirector, type HordePhase } from "../monster/model/HordeDirector.ts";
 
 export interface CombatTarget extends WorldPoint {
     readonly id: string;
@@ -23,8 +24,18 @@ export interface BattleActor extends CombatTarget {
 }
 
 export interface BattleStructure extends CombatTarget {
-    readonly kind: "breakable-barrier";
+    readonly kind: "breakable-barrier" | "ark-core";
     readonly name: string;
+}
+
+export interface BattleSimulationOptions {
+    readonly spawnInitialEnemies?: boolean;
+    readonly arkCore?: {
+        readonly position: WorldPoint;
+        readonly maxHealth: number;
+        readonly defense: number;
+        readonly radius: number;
+    };
 }
 
 export interface BattleLoot extends WorldPoint, MapLootDefinition {
@@ -58,7 +69,10 @@ export interface BattleNoticeEvent {
     readonly message: string;
 }
 
+export type EnemyKind = "walker" | "runner" | "mutant" | "brute";
+
 export interface EnemyAgent extends BattleActor {
+    readonly kind: EnemyKind;
     readonly attackDamage: number;
     readonly attackInterval: number;
     attackCooldown: number;
@@ -92,12 +106,20 @@ export interface CombatHitEvent extends WorldPoint {
     readonly becameZero: boolean;
 }
 
-const ENEMY_COMBAT = [
-    { health: 90, defense: 5, damage: 18, interval: 1 },
-    { health: 70, defense: 0, damage: 12, interval: 0.55 },
-    { health: 130, defense: 12, damage: 24, interval: 1.1 },
-    { health: 360, defense: 25, damage: 42, interval: 1.4 },
-] as const;
+const INITIAL_ENEMY_KINDS: readonly EnemyKind[] = ["walker", "runner", "mutant", "brute"];
+const ENEMY_COMBAT: Readonly<Record<EnemyKind, {
+    readonly health: number;
+    readonly defense: number;
+    readonly damage: number;
+    readonly interval: number;
+    readonly radius: number;
+    readonly speed: number;
+}>> = {
+    walker: { health: 90, defense: 5, damage: 18, interval: 1, radius: 25, speed: 92 },
+    runner: { health: 70, defense: 0, damage: 12, interval: 0.55, radius: 25, speed: 100 },
+    mutant: { health: 130, defense: 12, damage: 24, interval: 1.1, radius: 25, speed: 108 },
+    brute: { health: 360, defense: 25, damage: 42, interval: 1.4, radius: 36, speed: 116 },
+};
 
 function distance(a: WorldPoint, b: WorldPoint): number {
     return Math.hypot(a.x - b.x, a.y - b.y);
@@ -155,9 +177,12 @@ export class BattleSimulation {
     private nextProjectileId = 1;
     private nextHitEventId = 1;
     private nextNoticeEventId = 1;
+    private nextEnemyId = 0;
+    private nextHordeSpawnIndex = 0;
+    private horde: HordeDirector | null = null;
     private readonly pathfinder: GridPathfinder;
 
-    constructor(map: BattleMapDefinition) {
+    constructor(map: BattleMapDefinition, options: BattleSimulationOptions = {}) {
         this.map = map;
         this.pathfinder = new GridPathfinder(map);
         this.player = {
@@ -168,22 +193,11 @@ export class BattleSimulation {
             defense: 20,
             vitality: new VitalityRuntime({ maxHealth: 420, maxShield: 180, zeroState: "downed" }),
         };
-        this.enemies = map.enemySpawns.map((spawn, index) => ({
-            id: `enemy-${index}`,
-            ...map.cellToWorld(spawn),
-            radius: index === 3 ? 36 : 25,
-            speed: 92 + index * 8,
-            defense: ENEMY_COMBAT[index].defense,
-            vitality: new VitalityRuntime({ maxHealth: ENEMY_COMBAT[index].health, zeroState: "dead" }),
-            attackDamage: ENEMY_COMBAT[index].damage,
-            attackInterval: ENEMY_COMBAT[index].interval,
-            attackCooldown: 0,
-            path: [],
-            pathIndex: 0,
-            repathIn: index * 0.12,
-            targetCellKey: "",
-            attacking: false,
-        }));
+        this.enemies = options.spawnInitialEnemies === false ? [] : map.enemySpawns.map((spawn, index) => this.createEnemy(
+            INITIAL_ENEMY_KINDS[index] ?? "walker",
+            map.cellToWorld(spawn),
+            index * 0.12,
+        ));
         this.structures = map.barriers.map((barrier) => ({
             id: barrier.id,
             kind: "breakable-barrier" as const,
@@ -193,6 +207,17 @@ export class BattleSimulation {
             defense: barrier.defense,
             vitality: new VitalityRuntime({ maxHealth: barrier.maxHealth, zeroState: "destroyed" }),
         }));
+        if (options.arkCore) {
+            this.structures.push({
+                id: "ark-core",
+                kind: "ark-core",
+                name: "方舟核心",
+                ...options.arkCore.position,
+                radius: options.arkCore.radius,
+                defense: options.arkCore.defense,
+                vitality: new VitalityRuntime({ maxHealth: options.arkCore.maxHealth, zeroState: "destroyed" }),
+            });
+        }
         this.loot = map.loot.map((item) => ({
             ...item,
             ...map.cellToWorld(item.cell),
@@ -208,6 +233,32 @@ export class BattleSimulation {
 
     get activeEnemies(): EnemyAgent[] {
         return this.enemies.filter((enemy) => enemy.vitality.active);
+    }
+
+    get hordeStarted(): boolean {
+        return this.horde !== null;
+    }
+
+    get hordePhase(): HordePhase | null {
+        return this.horde?.phase ?? null;
+    }
+
+    get hordeCompleted(): boolean {
+        return this.horde?.completed ?? false;
+    }
+
+    get hordeProgressRatio(): number {
+        return this.horde?.progressRatio ?? 0;
+    }
+
+    get remainingHordeThreats(): number {
+        return this.horde?.remainingThreats(this.activeEnemies.length) ?? 0;
+    }
+
+    startHorde(seed = 1): boolean {
+        if (this.horde) return false;
+        this.horde = createFirstNightHorde(seed);
+        return true;
     }
 
     get nearestInteraction(): BattleInteractionTarget | null {
@@ -329,10 +380,43 @@ export class BattleSimulation {
         } else {
             this.stopPlayerActions();
         }
+        this.updateHorde(dt);
         this.updateAutoAttack(dt);
         this.updateProjectiles(dt);
         this.updateEnemies(dt);
         if (!this.player.vitality.active) this.stopPlayerActions();
+    }
+
+    private updateHorde(dt: number): void {
+        if (!this.horde || this.horde.completed) return;
+        const result = this.horde.tick(dt, this.activeEnemies.length);
+        for (const spawn of result.spawns) {
+            const kind: EnemyKind = spawn.id === "brute" ? "brute" : spawn.id === "runner" ? "runner" : "walker";
+            const spawnCell = this.map.enemySpawns[this.nextHordeSpawnIndex % this.map.enemySpawns.length] ?? this.map.start;
+            this.nextHordeSpawnIndex += 1;
+            this.enemies.push(this.createEnemy(kind, this.map.cellToWorld(spawnCell), this.nextEnemyId * 0.04));
+        }
+    }
+
+    private createEnemy(kind: EnemyKind, position: WorldPoint, repathIn: number): EnemyAgent {
+        const combat = ENEMY_COMBAT[kind];
+        return {
+            id: `enemy-${this.nextEnemyId++}`,
+            kind,
+            ...position,
+            radius: combat.radius,
+            speed: combat.speed,
+            defense: combat.defense,
+            vitality: new VitalityRuntime({ maxHealth: combat.health, zeroState: "dead" }),
+            attackDamage: combat.damage,
+            attackInterval: combat.interval,
+            attackCooldown: 0,
+            path: [],
+            pathIndex: 0,
+            repathIn,
+            targetCellKey: "",
+            attacking: false,
+        };
     }
 
     /** Locks and damages the nearest active enemy inside weapon range. */
@@ -355,6 +439,7 @@ export class BattleSimulation {
         }
         if (!target) {
             for (const structure of this.structures) {
+                if (structure.kind !== "breakable-barrier") continue;
                 if (!structure.vitality.active) continue;
                 const structureDistance = distance(structure, this.player);
                 if (structureDistance > this.autoAttackRange || structureDistance >= targetDistance) continue;
@@ -457,18 +542,26 @@ export class BattleSimulation {
     }
 
     private selectEnemyTarget(enemy: EnemyAgent): CombatTarget | null {
-        let structureTarget: BattleStructure | null = null;
-        let structureDistance = Number.POSITIVE_INFINITY;
-        for (const structure of this.structures) {
-            if (!structure.vitality.active) continue;
-            const candidateDistance = distance(enemy, structure);
-            if (candidateDistance <= this.structureAggroRange && candidateDistance < structureDistance) {
-                structureTarget = structure;
-                structureDistance = candidateDistance;
+        const arkCore = this.structures.find((structure) => structure.kind === "ark-core" && structure.vitality.active) ?? null;
+        let target: CombatTarget | null = arkCore ?? (this.player.vitality.active ? this.player : null);
+        let targetDistance = target ? distance(enemy, target) : Number.POSITIVE_INFINITY;
+        if (arkCore && this.player.vitality.active) {
+            const playerDistance = distance(enemy, this.player);
+            if (playerDistance + 100 < targetDistance) {
+                target = this.player;
+                targetDistance = playerDistance;
             }
         }
-        if (structureTarget) return structureTarget;
-        return this.player.vitality.active ? this.player : null;
+        for (const structure of this.structures) {
+            if (structure.kind === "ark-core") continue;
+            if (!structure.vitality.active) continue;
+            const candidateDistance = distance(enemy, structure);
+            if (candidateDistance <= this.structureAggroRange && candidateDistance < targetDistance) {
+                target = structure;
+                targetDistance = candidateDistance;
+            }
+        }
+        return target;
     }
 
     private updateEnemyAttack(enemy: EnemyAgent, target: CombatTarget): void {
@@ -508,7 +601,7 @@ export class BattleSimulation {
             });
             if (result.becameZero) {
                 const structure = this.structures.find((candidate) => candidate.id === target.id);
-                if (structure) this.openBarrierRoute(structure);
+                if (structure?.kind === "breakable-barrier") this.openBarrierRoute(structure);
             }
         }
         return result;

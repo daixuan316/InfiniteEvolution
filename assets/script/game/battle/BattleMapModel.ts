@@ -50,6 +50,13 @@ export interface MapBarrierDefinition {
     readonly radius: number;
 }
 
+export interface MapObstacleDefinition {
+    readonly id: string;
+    readonly name: string;
+    readonly minCell: GridPoint;
+    readonly maxCell: GridPoint;
+}
+
 export interface BattleMapDefinition {
     readonly columns: number;
     readonly rows: number;
@@ -62,6 +69,7 @@ export interface BattleMapDefinition {
     readonly pointsOfInterest: readonly MapPointOfInterest[];
     readonly loot: readonly MapLootDefinition[];
     readonly explorationPoints: readonly MapExplorationDefinition[];
+    readonly obstacles: readonly MapObstacleDefinition[];
     readonly barriers: readonly MapBarrierDefinition[];
     isWalkable(cell: GridPoint): boolean;
     isWorldWalkable(point: WorldPoint, radius?: number): boolean;
@@ -73,6 +81,8 @@ export interface BattleMapDefinition {
 const COLUMNS = 42;
 const ROWS = 24;
 const TILE_SIZE = 96;
+const BACKGROUND_TILE_COLUMNS = 14;
+const BACKGROUND_TILE_ROWS = 8;
 const VERTICAL_ROADS: ReadonlyArray<readonly [number, number]> = [[2, 6], [12, 15], [22, 25], [32, 35], [38, 40]];
 const HORIZONTAL_ROADS: ReadonlyArray<readonly [number, number]> = [[2, 5], [10, 13], [18, 21]];
 
@@ -84,6 +94,19 @@ function withinBand(value: number, bands: ReadonlyArray<readonly [number, number
 export function createHospitalDistrictMap(): BattleMapDefinition {
     const worldWidth = COLUMNS * TILE_SIZE;
     const worldHeight = ROWS * TILE_SIZE;
+    const obstacles: MapObstacleDefinition[] = [];
+    for (let tileY = 0; tileY < ROWS / BACKGROUND_TILE_ROWS; tileY++) {
+        for (let tileX = 0; tileX < COLUMNS / BACKGROUND_TILE_COLUMNS; tileX++) {
+            const offsetX = tileX * BACKGROUND_TILE_COLUMNS;
+            const offsetY = tileY * BACKGROUND_TILE_ROWS;
+            obstacles.push({
+                id: `hospital-${tileX}-${tileY}`,
+                name: "医院主体建筑",
+                minCell: { x: offsetX + 1, y: offsetY + 3 },
+                maxCell: { x: offsetX + 6, y: offsetY + 6 },
+            });
+        }
+    }
     const loot: readonly MapLootDefinition[] = [
         {
             id: "loot-hospital-medical",
@@ -105,7 +128,7 @@ export function createHospitalDistrictMap(): BattleMapDefinition {
             id: "loot-signal-weapon",
             typeId: "weapon-case",
             name: "信号塔武器箱",
-            cell: { x: 33, y: 3 },
+            cell: { x: 39, y: 3 },
             initiallyDiscovered: true,
             rewards: [{ kind: "ammo", amount: 4 }, { kind: "parts", amount: 1 }],
         },
@@ -113,7 +136,7 @@ export function createHospitalDistrictMap(): BattleMapDefinition {
             id: "loot-hidden-cache",
             typeId: "hidden-cache",
             name: "隐藏缓存点",
-            cell: { x: 5, y: 20 },
+            cell: { x: 11, y: 20 },
             initiallyDiscovered: false,
             rewards: [{ kind: "parts", amount: 4 }, { kind: "intel", amount: 2 }],
         },
@@ -137,7 +160,7 @@ export function createHospitalDistrictMap(): BattleMapDefinition {
             id: "explore-radar-terminal",
             typeId: "radar-terminal",
             name: "雷达终端",
-            cell: { x: 34, y: 19 },
+            cell: { x: 39, y: 19 },
             rewards: [{ kind: "intel", amount: 1 }],
         },
     ];
@@ -156,8 +179,19 @@ export function createHospitalDistrictMap(): BattleMapDefinition {
         if (x < 1 || y < 1 || x >= COLUMNS - 1 || y >= ROWS - 1) return false;
         return withinBand(x, VERTICAL_ROADS) || withinBand(y, HORIZONTAL_ROADS);
     };
-    const blockedCells = new Set<string>(barriers.flatMap((barrier) => barrier.blockedCells.map((cell) => `${cell.x}:${cell.y}`)));
-    const isWalkable = ({ x, y }: GridPoint): boolean => baseWalkable({ x, y }) && !blockedCells.has(`${x}:${y}`);
+    const staticBlockedCells = new Set<string>();
+    for (const obstacle of obstacles) {
+        for (let y = obstacle.minCell.y; y <= obstacle.maxCell.y; y++) {
+            for (let x = obstacle.minCell.x; x <= obstacle.maxCell.x; x++) {
+                staticBlockedCells.add(`${x}:${y}`);
+            }
+        }
+    }
+    const dynamicBlockedCells = new Set<string>(barriers.flatMap((barrier) => barrier.blockedCells.map((cell) => `${cell.x}:${cell.y}`)));
+    const isWalkable = ({ x, y }: GridPoint): boolean => {
+        const key = `${x}:${y}`;
+        return baseWalkable({ x, y }) && !staticBlockedCells.has(key) && !dynamicBlockedCells.has(key);
+    };
 
     const worldToCell = ({ x, y }: WorldPoint): GridPoint => ({
         x: Math.floor((x + worldWidth / 2) / TILE_SIZE),
@@ -190,17 +224,18 @@ export function createHospitalDistrictMap(): BattleMapDefinition {
         tileSize: TILE_SIZE,
         worldWidth,
         worldHeight,
-        start: { x: 4, y: 4 },
+        start: { x: 17, y: 2 },
         extraction: { x: 39, y: 20 },
-        enemySpawns: [{ x: 34, y: 20 }, { x: 24, y: 12 }, { x: 14, y: 19 }, { x: 33, y: 4 }],
+        enemySpawns: [{ x: 38, y: 19 }, { x: 24, y: 12 }, { x: 14, y: 19 }, { x: 39, y: 4 }],
         pointsOfInterest: [
             { id: "hospital", name: "战地医院", cell: { x: 14, y: 12 }, kind: "medical" },
             { id: "depot", name: "物资仓库", cell: { x: 24, y: 19 }, kind: "supplies" },
-            { id: "signal", name: "信号塔", cell: { x: 34, y: 3 }, kind: "signal" },
+            { id: "signal", name: "信号塔", cell: { x: 38, y: 3 }, kind: "signal" },
             { id: "ark", name: "方舟撤离点", cell: { x: 39, y: 20 }, kind: "extraction" },
         ],
         loot,
         explorationPoints,
+        obstacles,
         barriers,
         isWalkable,
         isWorldWalkable,
@@ -211,8 +246,8 @@ export function createHospitalDistrictMap(): BattleMapDefinition {
             if (!barrier) return false;
             for (const cell of barrier.blockedCells) {
                 const key = `${cell.x}:${cell.y}`;
-                if (blocking) blockedCells.add(key);
-                else blockedCells.delete(key);
+                if (blocking) dynamicBlockedCells.add(key);
+                else dynamicBlockedCells.delete(key);
             }
             return true;
         },

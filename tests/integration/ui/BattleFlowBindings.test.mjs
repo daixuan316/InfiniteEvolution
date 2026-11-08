@@ -72,3 +72,28 @@ test("Battle HUD consumes hit events into timed feedback", () => {
     assert.match(source, /0\.65/);
     assert.match(source, /0\.12/);
 });
+
+test("sunset returns from exploration before the shelter defense starts", () => {
+    const exploration = readFileSync("assets/script/game/battle/BattleHUDViewComp.ts", "utf8");
+    const defense = readFileSync("assets/script/game/battle/NightDefenseViewComp.ts", "utf8");
+    const runtime = readFileSync("assets/script/game/common/ui/UIRuntime.ts", "utf8");
+
+    assert.match(exploration, /replace\(UIID\.NightDefense/);
+    assert.doesNotMatch(exploration, /simulation\.startHorde/);
+    assert.match(defense, /createArkDefenseMap/);
+    assert.match(defense, /simulation\.startHorde/);
+    assert.match(defense, /gui\/hall\/texture\/ark-(garage|base)/);
+    assert.match(runtime, /UIPageBootstrap\.register\(UIID\.NightDefense, NightDefenseViewComp\)/);
+});
+
+test("Battle HUD binds exploration objects, interaction action, notices, and map markers", () => {
+    const source = readFileSync("assets/script/game/battle/BattleHUDViewComp.ts", "utf8");
+
+    assert.match(source, /renderExplorationObjects\(\)/);
+    assert.match(source, /nearestInteraction/);
+    assert.match(source, /simulation\.interact\(/);
+    assert.match(source, /consumeNoticeEvents\(\)/);
+    assert.match(source, /simulation\.loot/);
+    assert.match(source, /simulation\.explorationPoints/);
+    assert.match(source, /findCombatTarget\(projectile\.targetId\)/);
+});

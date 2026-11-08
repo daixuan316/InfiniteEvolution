@@ -24,12 +24,13 @@ import { GamePage } from "../common/ui/GamePage";
 import { SafeFrame, UIBuilder } from "../common/ui/UIBuilder";
 import { uiNavigation } from "../common/ui/UIRuntime";
 import { UI_THEME } from "../common/ui/UITheme";
+import { type HordePhase } from "../monster/model/HordeDirector";
 import { DayClock, explorationTimeScale, formatDayTime, type DayPressure } from "../world/model/DayClock";
 import { ActorAction, ActorAnimator } from "./ActorAnimator";
 import { cameraTargetFor } from "./BattleCamera";
-import { battleControlLayout } from "./BattleHUDLayout";
+import { battleControlLayout, playerStatusLayout } from "./BattleHUDLayout";
 import { createHospitalDistrictMap, WorldPoint } from "./BattleMapModel";
-import { BattleSimulation } from "./BattleSimulation";
+import { BattleSimulation, type EnemyKind } from "./BattleSimulation";
 
 const { ccclass } = _decorator;
 
@@ -42,6 +43,24 @@ const DAY_PRESSURE_PRESENTATION: Readonly<Record<DayPressure, { readonly text: s
     warning: { text: "日落警戒", color: UI_THEME.colors.orange },
     night: { text: "夜幕降临", color: UI_THEME.colors.danger },
     hunt: { text: "尸群追猎", color: UI_THEME.colors.magenta },
+};
+const HORDE_PHASE_PRESENTATION: Readonly<Record<HordePhase, { readonly text: string; readonly color: Color }>> = {
+    warning: { text: "尸潮预警", color: UI_THEME.colors.orange },
+    probe: { text: "试探波", color: UI_THEME.colors.cyan },
+    assault: { text: "主攻波", color: UI_THEME.colors.danger },
+    respite: { text: "喘息维修", color: UI_THEME.colors.success },
+    climax: { text: "高潮波", color: UI_THEME.colors.magenta },
+    cleanup: { text: "清剿残敌", color: UI_THEME.colors.orange },
+};
+const ENEMY_PRESENTATION: Readonly<Record<EnemyKind, {
+    readonly name: string;
+    readonly asset: string;
+    readonly size: number;
+}>> = {
+    walker: { name: "Walker", asset: "gui/battle-hud/actors/walker", size: 112 },
+    runner: { name: "Runner", asset: "gui/battle-hud/actors/runner", size: 118 },
+    mutant: { name: "Mutant", asset: "gui/battle-hud/actors/walker", size: 126 },
+    brute: { name: "Brute", asset: "gui/battle-hud/actors/brute", size: 172 },
 };
 
 interface DamageFeedback {
@@ -101,15 +120,31 @@ export class BattleHUDViewComp extends GamePage {
     private structureNode!: Node;
     private structureHealthBar!: Node;
     private structureStatusLabel!: Label;
+    private readonly lootNodes = new Map<string, Node>();
+    private readonly explorationNodes = new Map<string, Node>();
+    private readonly fullMapObjectLabels = new Map<string, Label>();
     private readonly projectileNodes = new Map<string, Node>();
     private readonly damageFeedbacks: DamageFeedback[] = [];
     private readonly hitFlashRemaining = new Map<string, number>();
     private lastDodgeCount = 0;
     private pathGraphics!: Graphics;
+    private navigationGraphics!: Graphics;
+    private minimapStatic!: Graphics;
     private minimapDynamic!: Graphics;
+    private fullMapStatic!: Graphics;
     private fullMapDynamic!: Graphics;
     private fullMapPanel!: Node;
     private distanceLabel!: Label;
+    private interactionPanel!: Node;
+    private interactionNameLabel!: Label;
+    private interactionDistanceLabel!: Label;
+    private interactionActionLabel!: Label;
+    private interactionTargetId: string | null = null;
+    private noticePanel!: Node;
+    private noticeLabel!: Label;
+    private noticeOpacity!: UIOpacity;
+    private noticeRemaining = 0;
+    private lastNoticeId = "";
     private joystickThumb!: Node;
     private joystickCenter = { x: 0, y: 0 };
     private joystickVector = { x: 0, y: 0 };
@@ -119,6 +154,9 @@ export class BattleHUDViewComp extends GamePage {
     private sprintTouch = false;
     private paused = false;
     private lastPathSignature = "";
+    private lastHordePhase: HordePhase | null = null;
+    private nightCompletedDispatched = false;
+    private barrierWasActive = true;
 
     protected onLoad(): void {
         this.render();
@@ -131,11 +169,18 @@ export class BattleHUDViewComp extends GamePage {
     update(deltaTime: number): void {
         const fullMapOpen = Boolean(this.fullMapPanel?.active);
         this.advanceDayClock(deltaTime, explorationTimeScale(this.paused, fullMapOpen));
+        this.syncHordeEvents();
         if (this.paused || fullMapOpen) return;
         this.simulation.update(deltaTime);
+        this.syncDayTimer();
+        this.syncHordeEvents();
         this.syncActors();
         this.syncVitality();
         this.syncProjectiles();
+        this.syncExplorationObjects();
+        this.syncInteractionPanel();
+        this.consumeNoticeEvents();
+        this.updateNotice(deltaTime);
         this.consumeHitEvents();
         this.updateCombatFeedback(deltaTime);
         this.updateCamera(deltaTime);
@@ -161,11 +206,15 @@ export class BattleHUDViewComp extends GamePage {
         this.renderDayTimer(this.frame);
         this.renderMinimap(this.frame);
         this.renderTouchControls(this.frame);
+        this.renderInteractionPanel(this.frame);
+        this.renderNotice(this.frame);
         this.renderObjective(this.frame);
         this.renderFullMap(this.frame);
         this.syncActors();
         this.syncVitality();
         this.syncProjectiles();
+        this.syncExplorationObjects();
+        this.syncInteractionPanel();
         this.updateCamera(1);
         this.drawDynamicMap(this.minimapDynamic, 142, 82, true);
     }
@@ -190,48 +239,109 @@ export class BattleHUDViewComp extends GamePage {
         }
 
         const navigationOverlay = this.createNode(this.worldLayer, "NavigationOverlay", new Size(this.map.worldWidth, this.map.worldHeight), Vec3.ZERO);
-        const navigationGraphics = navigationOverlay.addComponent(Graphics);
-        navigationGraphics.fillColor = new Color(22, 228, 239, 13);
+        this.navigationGraphics = navigationOverlay.addComponent(Graphics);
+        this.redrawNavigationOverlay();
+
+        const pathNode = this.createNode(this.worldLayer, "NavigationPath", new Size(this.map.worldWidth, this.map.worldHeight), Vec3.ZERO);
+        this.pathGraphics = pathNode.addComponent(Graphics);
+        this.renderExplorationObjects();
+        this.renderWorldActors();
+    }
+
+    private redrawNavigationOverlay(): void {
+        this.navigationGraphics.clear();
+        this.navigationGraphics.fillColor = new Color(22, 228, 239, 13);
         for (let y = 0; y < this.map.rows; y++) {
             for (let x = 0; x < this.map.columns; x++) {
                 if (!this.map.isWalkable({ x, y })) continue;
                 const point = this.map.cellToWorld({ x, y });
-                navigationGraphics.rect(point.x - this.map.tileSize / 2, point.y - this.map.tileSize / 2, this.map.tileSize, this.map.tileSize);
+                this.navigationGraphics.rect(point.x - this.map.tileSize / 2, point.y - this.map.tileSize / 2, this.map.tileSize, this.map.tileSize);
             }
         }
-        navigationGraphics.fill();
+        this.navigationGraphics.fill();
+    }
 
-        const pathNode = this.createNode(this.worldLayer, "NavigationPath", new Size(this.map.worldWidth, this.map.worldHeight), Vec3.ZERO);
-        this.pathGraphics = pathNode.addComponent(Graphics);
-        this.renderWorldActors();
+    private renderExplorationObjects(): void {
+        for (const loot of this.simulation.loot) {
+            const node = this.createNode(this.worldLayer, `Loot:${loot.id}`, new Size(120, 100), new Vec3(loot.x, loot.y));
+            const opacity = node.addComponent(UIOpacity);
+            opacity.opacity = 255;
+            const graphics = node.addComponent(Graphics);
+            graphics.fillColor = new Color(35, 45, 51, 245);
+            graphics.roundRect(-42, -24, 84, 48, 7);
+            graphics.fill();
+            graphics.lineWidth = 5;
+            graphics.strokeColor = UI_THEME.colors.orange;
+            graphics.roundRect(-42, -24, 84, 48, 7);
+            graphics.stroke();
+            graphics.moveTo(-38, 6);
+            graphics.lineTo(38, 6);
+            graphics.moveTo(0, 6);
+            graphics.lineTo(0, -18);
+            graphics.stroke();
+            UIBuilder.label(node, `LootName:${loot.id}`, loot.name, new Size(156, 28), new Vec3(0, -42), 15, UI_THEME.colors.orange);
+            node.active = loot.discovered;
+            this.lootNodes.set(loot.id, node);
+        }
+
+        for (const point of this.simulation.explorationPoints) {
+            const node = this.createNode(this.worldLayer, `Explore:${point.id}`, new Size(116, 116), new Vec3(point.x, point.y));
+            const opacity = node.addComponent(UIOpacity);
+            opacity.opacity = 255;
+            const graphics = node.addComponent(Graphics);
+            graphics.fillColor = new Color(9, 57, 70, 235);
+            graphics.moveTo(0, 34);
+            graphics.lineTo(34, 0);
+            graphics.lineTo(0, -34);
+            graphics.lineTo(-34, 0);
+            graphics.close();
+            graphics.fill();
+            graphics.lineWidth = 5;
+            graphics.strokeColor = UI_THEME.colors.cyan;
+            graphics.moveTo(0, 34);
+            graphics.lineTo(34, 0);
+            graphics.lineTo(0, -34);
+            graphics.lineTo(-34, 0);
+            graphics.close();
+            graphics.stroke();
+            graphics.moveTo(0, -16);
+            graphics.lineTo(0, 16);
+            graphics.moveTo(-12, 4);
+            graphics.lineTo(0, 16);
+            graphics.lineTo(12, 4);
+            graphics.stroke();
+            UIBuilder.label(node, `ExploreName:${point.id}`, point.name, new Size(156, 28), new Vec3(0, -48), 15, UI_THEME.colors.cyan);
+            this.explorationNodes.set(point.id, node);
+        }
     }
 
     private renderWorldActors(): void {
         this.playerNode = this.createActor("Player", BattleHUDViewComp.PLAYER_ASSET, 158);
         this.playerAnimator = this.playerNode.getComponent(ActorAnimator);
-        const assets = [
-            ["Walker", "gui/battle-hud/actors/walker", 112],
-            ["Runner", "gui/battle-hud/actors/runner", 118],
-            ["Mutant", "gui/battle-hud/actors/walker", 126],
-            ["Brute", "gui/battle-hud/actors/brute", 172],
-        ] as const;
+        this.enemyNodes = [];
         this.enemyAnimators = [];
         this.enemyHealthBars = [];
-        this.enemyNodes = assets.map(([name, asset, size], index) => {
-            const actor = this.createActor(name, asset, size);
-            const animator = actor.getComponent(ActorAnimator);
-            if (animator) this.enemyAnimators.push(animator);
+        this.ensureEnemyNodes();
+        this.renderBattleStructure();
+    }
+
+    private ensureEnemyNodes(): void {
+        while (this.enemyNodes.length < this.simulation.enemies.length) {
+            const index = this.enemyNodes.length;
+            const enemy = this.simulation.enemies[index];
+            const presentation = ENEMY_PRESENTATION[enemy.kind];
+            const actor = this.createActor(`${presentation.name}:${enemy.id}`, presentation.asset, presentation.size);
+            this.enemyNodes[index] = actor;
+            this.enemyAnimators[index] = actor.getComponent(ActorAnimator)!;
             this.enemyHealthBars[index] = UIBuilder.progressBar(
                 actor,
-                `${name}Health`,
-                new Size(index === 3 ? 156 : 104, 18),
-                new Vec3(0, size * 0.47),
-                this.simulation.enemies[index].vitality.healthRatio,
-                index === 3 ? UI_THEME.colors.magenta : UI_THEME.colors.danger,
+                `${presentation.name}Health:${enemy.id}`,
+                new Size(enemy.kind === "brute" ? 156 : 104, 18),
+                new Vec3(0, presentation.size * 0.47),
+                enemy.vitality.healthRatio,
+                enemy.kind === "brute" ? UI_THEME.colors.magenta : UI_THEME.colors.danger,
             );
-            return actor;
-        });
-        this.renderBattleStructure();
+        }
     }
 
     private renderBattleStructure(): void {
@@ -289,13 +399,14 @@ export class BattleHUDViewComp extends GamePage {
 
     private renderPlayerStatus(frame: SafeFrame): void {
         const status = UIBuilder.hudPlate(this.node, "PlayerStatus", "exploration-hud/01-player-health-frame", new Size(390, 176), new Vec3(frame.left + 195, frame.top - 88));
+        const layout = playerStatusLayout();
         void UIBuilder.icon(status, "hud-combat/01-health", 46, new Vec3(-163, 54));
-        this.playerHealthText = UIBuilder.label(status, "HealthText", "", new Size(170, 32), new Vec3(70, 57), 23, UI_THEME.colors.white, HorizontalTextAlignment.RIGHT);
-        this.playerHealthBar = UIBuilder.progressBar(status, "Health", new Size(278, 24), new Vec3(26, 24), 1, UI_THEME.colors.danger);
-        this.playerShieldText = UIBuilder.label(status, "ShieldText", "", new Size(220, 24), new Vec3(-18, -12), 15, UI_THEME.colors.white, HorizontalTextAlignment.LEFT);
-        this.playerShieldBar = UIBuilder.progressBar(status, "Shield", new Size(240, 16), new Vec3(13, -34), 1, UI_THEME.colors.cyan);
-        UIBuilder.label(status, "PollutionText", "污染  32 / 100", new Size(220, 24), new Vec3(-18, -60), 15, UI_THEME.colors.magenta, HorizontalTextAlignment.LEFT);
-        this.downedLabel = UIBuilder.label(status, "DownedText", "已倒地", new Size(120, 30), new Vec3(120, -60), 19, UI_THEME.colors.danger);
+        this.playerHealthBar = UIBuilder.progressBar(status, "Health", new Size(layout.healthBar.width, layout.healthBar.height), new Vec3(layout.healthBar.centerX, layout.healthBar.centerY), 1, UI_THEME.colors.danger);
+        this.playerHealthText = UIBuilder.label(status, "HealthText", "", new Size(layout.healthText.width, layout.healthText.height), new Vec3(layout.healthText.centerX, layout.healthText.centerY), 19, UI_THEME.colors.white, HorizontalTextAlignment.RIGHT);
+        this.playerShieldBar = UIBuilder.progressBar(status, "Shield", new Size(layout.shieldBar.width, layout.shieldBar.height), new Vec3(layout.shieldBar.centerX, layout.shieldBar.centerY), 1, UI_THEME.colors.cyan);
+        this.playerShieldText = UIBuilder.label(status, "ShieldText", "", new Size(layout.shieldText.width, layout.shieldText.height), new Vec3(layout.shieldText.centerX, layout.shieldText.centerY), 15, UI_THEME.colors.white, HorizontalTextAlignment.LEFT);
+        UIBuilder.label(status, "PollutionText", "污染  32 / 100", new Size(layout.pollutionText.width, layout.pollutionText.height), new Vec3(layout.pollutionText.centerX, layout.pollutionText.centerY), 15, UI_THEME.colors.magenta, HorizontalTextAlignment.LEFT);
+        this.downedLabel = UIBuilder.label(status, "DownedText", "已倒地", new Size(layout.downedText.width, layout.downedText.height), new Vec3(layout.downedText.centerX, layout.downedText.centerY), 19, UI_THEME.colors.danger);
         this.downedLabel.node.active = false;
     }
 
@@ -313,6 +424,9 @@ export class BattleHUDViewComp extends GamePage {
         const previousSecond = Math.ceil(this.dayClock.remaining);
         const previousPressure = this.dayClock.pressure;
         this.dayClock.tick(deltaTime, timeScale);
+        if (this.dayClock.pressure === "night" || this.dayClock.pressure === "hunt") {
+            this.simulation.startHorde(1);
+        }
         this.syncDayTimer();
 
         if (Math.ceil(this.dayClock.remaining) !== previousSecond) {
@@ -324,6 +438,19 @@ export class BattleHUDViewComp extends GamePage {
     }
 
     private syncDayTimer(): void {
+        if (this.simulation.hordeStarted) {
+            const phase = this.simulation.hordePhase;
+            const presentation = phase ? HORDE_PHASE_PRESENTATION[phase] : HORDE_PHASE_PRESENTATION.warning;
+            this.dayTimeLabel.string = this.simulation.hordeCompleted
+                ? "防守完成"
+                : `威胁 ${this.simulation.remainingHordeThreats}`;
+            this.dayPressureLabel.string = this.simulation.hordeCompleted ? "尸潮击退" : presentation.text;
+            this.dayPressureLabel.color = this.simulation.hordeCompleted ? UI_THEME.colors.success : presentation.color;
+            this.dayTimeLabel.color = this.dayPressureLabel.color;
+            UIBuilder.setProgressBarRatio(this.dayProgressBar, this.simulation.hordeProgressRatio);
+            return;
+        }
+
         this.dayTimeLabel.string = formatDayTime(this.dayClock.remaining);
         UIBuilder.setProgressBarRatio(this.dayProgressBar, this.dayClock.remainingRatio);
 
@@ -333,10 +460,24 @@ export class BattleHUDViewComp extends GamePage {
         this.dayTimeLabel.color = presentation.color;
     }
 
+    private syncHordeEvents(): void {
+        const phase = this.simulation.hordePhase;
+        if (phase && phase !== this.lastHordePhase) {
+            this.lastHordePhase = phase;
+            if (phase === "warning") oops.message.dispatchEvent(GameEvent.HordeWarning);
+            oops.message.dispatchEvent(GameEvent.HordeWaveChanged, phase, this.simulation.remainingHordeThreats);
+        }
+        if (this.simulation.hordeCompleted && !this.nightCompletedDispatched) {
+            this.nightCompletedDispatched = true;
+            oops.message.dispatchEvent(GameEvent.NightCompleted);
+        }
+    }
+
     private renderMinimap(frame: SafeFrame): void {
         const mapPanel = UIBuilder.hudPlate(this.node, "Minimap", "exploration-hud/09-minimap-bezel", new Size(196, 196), new Vec3(frame.right - 104, frame.top - 104));
         const mapCanvas = this.createNode(mapPanel, "MinimapCanvas", new Size(142, 82), new Vec3(-8, 8));
-        this.drawStaticMap(mapCanvas.addComponent(Graphics), 142, 82);
+        this.minimapStatic = mapCanvas.addComponent(Graphics);
+        this.drawStaticMap(this.minimapStatic, 142, 82);
         const dynamicNode = this.createNode(mapCanvas, "MinimapDynamic", new Size(142, 82), Vec3.ZERO);
         this.minimapDynamic = dynamicNode.addComponent(Graphics);
         const mapButton = this.createNode(mapPanel, "BtnOpenFullMap", new Size(142, 82), new Vec3(-8, 8));
@@ -375,6 +516,93 @@ export class BattleHUDViewComp extends GamePage {
         this.bindTouch(dodge, () => { this.simulation.tryDodge(); });
     }
 
+    private renderInteractionPanel(frame: SafeFrame): void {
+        this.interactionPanel = UIBuilder.surface(
+            this.node,
+            "InteractionPanel",
+            new Size(340, 94),
+            new Vec3(0, frame.bottom + 140),
+            "tooltip",
+        );
+        this.interactionNameLabel = UIBuilder.label(
+            this.interactionPanel,
+            "InteractionName",
+            "",
+            new Size(190, 34),
+            new Vec3(-66, 20),
+            18,
+            UI_THEME.colors.white,
+            HorizontalTextAlignment.LEFT,
+        );
+        this.interactionDistanceLabel = UIBuilder.label(
+            this.interactionPanel,
+            "InteractionDistance",
+            "",
+            new Size(190, 26),
+            new Vec3(-66, -18),
+            14,
+            UI_THEME.colors.muted,
+            HorizontalTextAlignment.LEFT,
+        );
+        const action = UIBuilder.button(this.interactionPanel, "BtnInteract", "开启", new Size(112, 62), new Vec3(102, 0), true);
+        this.interactionActionLabel = action.getChildByName("BtnInteractLabel")!.getComponent(Label)!;
+        this.bindTouch(action, () => this.activateInteraction());
+        this.interactionPanel.active = false;
+    }
+
+    private renderNotice(frame: SafeFrame): void {
+        this.noticePanel = UIBuilder.hudPlate(
+            this.node,
+            "ExplorationNotice",
+            "exploration-hud/12-pickup-notification-card",
+            new Size(460, 82),
+            new Vec3(0, frame.top - 154),
+        );
+        this.noticeLabel = UIBuilder.label(this.noticePanel, "ExplorationNoticeText", "", new Size(410, 52), Vec3.ZERO, 17, UI_THEME.colors.orange);
+        this.noticeOpacity = this.noticePanel.addComponent(UIOpacity);
+        this.noticePanel.active = false;
+    }
+
+    private syncInteractionPanel(): void {
+        const target = this.simulation.nearestInteraction;
+        this.interactionTargetId = target?.id ?? null;
+        this.interactionPanel.active = target !== null;
+        if (!target) return;
+        this.interactionNameLabel.string = target.name;
+        this.interactionDistanceLabel.string = `距离 ${Math.ceil(target.distance / 4)}m`;
+        this.interactionActionLabel.string = target.action === "open" ? "开启" : "调查";
+    }
+
+    private activateInteraction(): void {
+        if (!this.interactionTargetId || this.paused || this.fullMapPanel.active) return;
+        const result = this.simulation.interact(this.interactionTargetId);
+        if (!result.accepted) return;
+        this.syncExplorationObjects();
+        this.syncInteractionPanel();
+        this.syncFullMapObjectLabels();
+        this.drawDynamicMap(this.minimapDynamic, 142, 82, true);
+        this.consumeNoticeEvents();
+    }
+
+    private consumeNoticeEvents(): void {
+        const notice = this.simulation.noticeEvents[this.simulation.noticeEvents.length - 1];
+        if (!notice || notice.id === this.lastNoticeId) return;
+        this.lastNoticeId = notice.id;
+        this.noticeLabel.string = notice.message;
+        this.noticeOpacity.opacity = 255;
+        this.noticeRemaining = 2.4;
+        this.noticePanel.active = true;
+    }
+
+    private updateNotice(deltaTime: number): void {
+        if (this.noticeRemaining <= 0) return;
+        this.noticeRemaining = Math.max(0, this.noticeRemaining - Math.max(0, deltaTime));
+        this.noticeOpacity.opacity = this.noticeRemaining > 0.4
+            ? 255
+            : Math.round(255 * this.noticeRemaining / 0.4);
+        if (this.noticeRemaining === 0) this.noticePanel.active = false;
+    }
+
     private renderObjective(frame: SafeFrame): void {
         const objective = UIBuilder.surface(this.node, "ObjectivePlate", new Size(570, 68), new Vec3(0, frame.bottom + 48), "tooltip");
         UIBuilder.label(objective, "Objective", "当前目标 · 搜索医院物资并撤离  |  WASD / 摇杆移动 · 点击地面寻路", new Size(538, 38), Vec3.ZERO, 17, UI_THEME.colors.white);
@@ -390,19 +618,32 @@ export class BattleHUDViewComp extends GamePage {
         UIBuilder.label(panel, "FullMapTitle", "医院城区 · 完整战术地图", new Size(620, 48), new Vec3(0, 264), 28, UI_THEME.colors.white);
         UIBuilder.label(panel, "FullMapHint", "青色：可通行道路   橙色：当前路线   红色：感染体   点击右上角小地图可再次打开", new Size(760, 28), new Vec3(0, 225), 15, UI_THEME.colors.muted);
         const mapCanvas = this.createNode(panel, "FullMapCanvas", new Size(800, 440), new Vec3(0, -20));
-        this.drawStaticMap(mapCanvas.addComponent(Graphics), 800, 440);
+        this.fullMapStatic = mapCanvas.addComponent(Graphics);
+        this.drawStaticMap(this.fullMapStatic, 800, 440);
         const dynamicNode = this.createNode(mapCanvas, "FullMapDynamic", new Size(800, 440), Vec3.ZERO);
         this.fullMapDynamic = dynamicNode.addComponent(Graphics);
         for (const point of this.map.pointsOfInterest) {
             const position = this.mapPosition(this.map.cellToWorld(point.cell), 800, 440);
             UIBuilder.label(mapCanvas, `Poi:${point.id}`, point.name, new Size(116, 24), new Vec3(position.x, position.y + 15), 13, UI_THEME.colors.white);
         }
+        for (const loot of this.simulation.loot) {
+            const position = this.mapPosition(loot, 800, 440);
+            const label = UIBuilder.label(mapCanvas, `LootMap:${loot.id}`, loot.name, new Size(150, 22), new Vec3(position.x, position.y + 14), 12, UI_THEME.colors.orange);
+            this.fullMapObjectLabels.set(loot.id, label);
+        }
+        for (const point of this.simulation.explorationPoints) {
+            const position = this.mapPosition(point, 800, 440);
+            const label = UIBuilder.label(mapCanvas, `ExploreMap:${point.id}`, point.name, new Size(150, 22), new Vec3(position.x, position.y + 14), 12, UI_THEME.colors.cyan);
+            this.fullMapObjectLabels.set(point.id, label);
+        }
+        this.syncFullMapObjectLabels();
         const close = UIBuilder.button(panel, "BtnCloseFullMap", "关闭地图", new Size(152, 54), new Vec3(365, 260));
         this.bindTouch(close, () => this.closeFullMap());
         this.fullMapPanel.active = false;
     }
 
     private drawStaticMap(graphics: Graphics, width: number, height: number): void {
+        graphics.clear();
         graphics.fillColor = new Color(2, 13, 22, 245);
         graphics.rect(-width / 2, -height / 2, width, height);
         graphics.fill();
@@ -447,6 +688,40 @@ export class BattleHUDViewComp extends GamePage {
             graphics.circle(position.x, position.y, width > 200 ? 5 : 2.3);
             graphics.fill();
         }
+        for (const loot of this.simulation.loot) {
+            if (!loot.discovered) continue;
+            const position = this.mapPosition(loot, width, height);
+            const radius = width > 200 ? (loot.opened ? 4 : 7) : (loot.opened ? 1.8 : 3.2);
+            graphics.fillColor = loot.opened ? new Color(220, 232, 235, 150) : UI_THEME.colors.orange;
+            graphics.rect(position.x - radius, position.y - radius, radius * 2, radius * 2);
+            graphics.fill();
+            if (loot.opened && width > 200) {
+                graphics.lineWidth = 2;
+                graphics.strokeColor = UI_THEME.colors.white;
+                graphics.moveTo(position.x - 4, position.y);
+                graphics.lineTo(position.x - 1, position.y - 4);
+                graphics.lineTo(position.x + 5, position.y + 4);
+                graphics.stroke();
+            }
+        }
+        for (const point of this.simulation.explorationPoints) {
+            const position = this.mapPosition(point, width, height);
+            const radius = width > 200 ? (point.completed ? 4 : 7) : (point.completed ? 1.8 : 3.2);
+            graphics.fillColor = point.completed ? new Color(220, 232, 235, 150) : UI_THEME.colors.cyan;
+            graphics.moveTo(position.x, position.y + radius);
+            graphics.lineTo(position.x + radius, position.y);
+            graphics.lineTo(position.x, position.y - radius);
+            graphics.lineTo(position.x - radius, position.y);
+            graphics.close();
+            graphics.fill();
+        }
+        const barrier = this.simulation.structures[0];
+        const barrierPosition = this.mapPosition(barrier, width, height);
+        graphics.lineWidth = width > 200 ? 5 : 2;
+        graphics.strokeColor = barrier.vitality.active ? UI_THEME.colors.danger : UI_THEME.colors.cyan;
+        graphics.moveTo(barrierPosition.x - (width > 200 ? 9 : 4), barrierPosition.y);
+        graphics.lineTo(barrierPosition.x + (width > 200 ? 9 : 4), barrierPosition.y);
+        graphics.stroke();
         const player = this.mapPosition(this.simulation.player, width, height);
         graphics.fillColor = UI_THEME.colors.white;
         graphics.circle(player.x, player.y, width > 200 ? 7 : 3.2);
@@ -467,8 +742,40 @@ export class BattleHUDViewComp extends GamePage {
         return { x: point.x / this.map.worldWidth * width, y: point.y / this.map.worldHeight * height };
     }
 
+    private syncExplorationObjects(): void {
+        for (const loot of this.simulation.loot) {
+            const node = this.lootNodes.get(loot.id);
+            if (!node) continue;
+            node.active = loot.discovered;
+            node.getComponent(UIOpacity)!.opacity = loot.opened ? 100 : 255;
+        }
+        for (const point of this.simulation.explorationPoints) {
+            const node = this.explorationNodes.get(point.id);
+            if (!node) continue;
+            node.getComponent(UIOpacity)!.opacity = point.completed ? 100 : 255;
+        }
+        this.syncFullMapObjectLabels();
+    }
+
+    private syncFullMapObjectLabels(): void {
+        for (const loot of this.simulation.loot) {
+            const label = this.fullMapObjectLabels.get(loot.id);
+            if (!label) continue;
+            label.node.active = loot.discovered;
+            label.string = loot.opened ? `✓ ${loot.name}` : loot.name;
+            label.color = loot.opened ? UI_THEME.colors.muted : UI_THEME.colors.orange;
+        }
+        for (const point of this.simulation.explorationPoints) {
+            const label = this.fullMapObjectLabels.get(point.id);
+            if (!label) continue;
+            label.string = point.completed ? `✓ ${point.name}` : point.name;
+            label.color = point.completed ? UI_THEME.colors.muted : UI_THEME.colors.cyan;
+        }
+    }
+
     private syncActors(): void {
         const simulation = this.simulation;
+        this.ensureEnemyNodes();
         this.playerNode.setPosition(simulation.player.x, simulation.player.y);
         const structure = simulation.structures[0];
         this.structureNode.setPosition(structure.x, structure.y);
@@ -500,6 +807,7 @@ export class BattleHUDViewComp extends GamePage {
     }
 
     private syncVitality(): void {
+        this.ensureEnemyNodes();
         const player = this.simulation.player.vitality;
         this.playerHealthText.string = `${Math.ceil(player.currentHealth)} / ${player.maxHealth}`;
         this.playerShieldText.string = `护盾  ${Math.ceil(player.currentShield)} / ${player.maxShield}`;
@@ -516,11 +824,17 @@ export class BattleHUDViewComp extends GamePage {
 
         const structure = this.simulation.structures[0];
         UIBuilder.setProgressBarRatio(this.structureHealthBar, structure.vitality.healthRatio);
-        const disabled = structure.vitality.state === "disabled";
-        this.structureStatusLabel.string = disabled
-            ? "路障 · 已失效"
-            : `路障 ${Math.ceil(structure.vitality.currentHealth)} / ${structure.vitality.maxHealth}`;
-        this.structureNode.getComponent(UIOpacity)!.opacity = disabled ? 110 : 255;
+        const destroyed = structure.vitality.state === "destroyed";
+        this.structureStatusLabel.string = destroyed
+            ? "路障 · 已摧毁 / 捷径已开放"
+            : `可破坏路障 ${Math.ceil(structure.vitality.currentHealth)} / ${structure.vitality.maxHealth}`;
+        this.structureNode.getComponent(UIOpacity)!.opacity = destroyed ? 90 : 255;
+        if (this.barrierWasActive !== structure.vitality.active) {
+            this.barrierWasActive = structure.vitality.active;
+            this.redrawNavigationOverlay();
+            this.drawStaticMap(this.minimapStatic, 142, 82);
+            this.drawStaticMap(this.fullMapStatic, 800, 440);
+        }
     }
 
     private createProjectileNode(id: string): Node {
@@ -552,7 +866,7 @@ export class BattleHUDViewComp extends GamePage {
                 this.projectileNodes.set(projectile.id, node);
             }
             node.setPosition(projectile.x, projectile.y);
-            const target = this.simulation.enemies.find((enemy) => enemy.id === projectile.targetId);
+            const target = this.simulation.findCombatTarget(projectile.targetId);
             if (target) {
                 const angle = Math.atan2(target.y - projectile.y, target.x - projectile.x) * 180 / Math.PI;
                 node.setRotationFromEuler(0, 0, angle);
@@ -636,7 +950,7 @@ export class BattleHUDViewComp extends GamePage {
             const structure = this.simulation.structures.find((candidate) => candidate.id === targetId);
             if (structure) {
                 targetNode = this.structureNode;
-                restingOpacity = structure.vitality.state === "disabled" ? 110 : 255;
+                restingOpacity = structure.vitality.state === "destroyed" ? 90 : 255;
             }
         }
         if (!targetNode) return;
@@ -762,6 +1076,7 @@ export class BattleHUDViewComp extends GamePage {
         if (this.paused) return;
         this.fullMapPanel.active = true;
         this.setAnimatorsEnabled(false);
+        this.syncFullMapObjectLabels();
         this.drawDynamicMap(this.fullMapDynamic, 800, 440, false);
     }
 

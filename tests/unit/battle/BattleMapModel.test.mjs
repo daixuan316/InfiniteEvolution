@@ -29,6 +29,21 @@ test("world and grid coordinate conversion round-trips every important point", (
     }
 });
 
+test("the hospital footprint blocks the full building instead of inheriting the road band", () => {
+    const map = createHospitalDistrictMap();
+
+    for (const { x: offsetX, y: offsetY } of [{ x: 0, y: 0 }, { x: 14, y: 8 }, { x: 28, y: 16 }]) {
+        for (let y = offsetY + 3; y <= offsetY + 6; y++) {
+            for (let x = offsetX + 1; x <= offsetX + 6; x++) {
+                assert.equal(map.isWalkable({ x, y }), false, `hospital cell ${x},${y} must be blocked`);
+                assert.equal(map.isWorldWalkable(map.cellToWorld({ x, y })), false, `hospital world cell ${x},${y} must be blocked`);
+            }
+        }
+    }
+
+    assert.equal(map.isWalkable({ x: 7, y: 4 }), true, "the road beside the hospital must remain open");
+});
+
 test("hospital district places reachable loot and exploration points", () => {
     const map = createHospitalDistrictMap();
     const pathfinder = new GridPathfinder(map);

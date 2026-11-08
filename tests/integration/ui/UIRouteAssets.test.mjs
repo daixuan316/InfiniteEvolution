@@ -10,6 +10,7 @@ const prefabs = [
     "crew/crew",
     "intel/intel",
     "battle-hud/battle-hud",
+    "night-defense/night-defense",
     "pause/pause",
     "confirm/confirm",
 ];
