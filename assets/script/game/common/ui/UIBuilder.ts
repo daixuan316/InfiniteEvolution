@@ -29,6 +29,8 @@ export interface SafeFrame {
     bottom: number;
 }
 
+export type SpriteFit = "stretch" | "contain" | "cover";
+
 export class UIBuilder {
     private static readonly COMMON_TEXTURE = "gui/ui-p0/texture/common";
     private static readonly SURFACE_ASSET = {
@@ -115,15 +117,16 @@ export class UIBuilder {
 
     static navButton(parent: Node, name: string, text: string, icon: string, size: Size, position: Vec3, primary = false): Node {
         const node = this.surface(parent, name, size, position, primary ? "primary" : "secondary");
+        const wide = size.width >= size.height * 2;
         const iconSize = Math.min(58, size.height - 20);
-        void this.icon(node, icon, iconSize, new Vec3(primary ? -size.width / 2 + 48 : 0, primary ? 0 : 10));
+        void this.icon(node, icon, iconSize, new Vec3(wide ? -size.width / 2 + 44 : 0, wide ? 0 : 10));
         this.label(
             node,
             `${name}Label`,
             text,
-            new Size(primary ? size.width - 92 : size.width - 14, 30),
-            new Vec3(primary ? 28 : 0, primary ? 0 : -size.height / 2 + 19),
-            primary ? 22 : 17,
+            new Size(wide ? size.width - 84 : size.width - 14, 30),
+            new Vec3(wide ? 24 : 0, wide ? 0 : -size.height / 2 + 19),
+            wide ? (primary ? 22 : 20) : 17,
             primary ? UI_THEME.colors.black : UI_THEME.colors.white,
         );
         return node;
@@ -150,11 +153,11 @@ export class UIBuilder {
     }
 
     static async icon(parent: Node, assetPath: string, size: number, position: Vec3 = Vec3.ZERO): Promise<Sprite | null> {
-        return this.sprite(parent, `gui/ui-icons/${assetPath}`, new Size(size, size), position);
+        return this.sprite(parent, `gui/ui-icons/${assetPath}`, new Size(size, size), position, false, Color.WHITE, "contain");
     }
 
     static async backdrop(parent: Node, assetPath: string, size: Size, tint = Color.WHITE): Promise<Sprite | null> {
-        return this.sprite(parent, assetPath, size, Vec3.ZERO, false, tint);
+        return this.sprite(parent, assetPath, size, Vec3.ZERO, false, tint, "cover");
     }
 
     static surface(
@@ -181,10 +184,11 @@ export class UIBuilder {
         return this.surface(parent, name, size, position, selected ? "slotSelected" : "slot");
     }
 
-    static async sprite(parent: Node, assetPath: string, size: Size, position: Vec3 = Vec3.ZERO, sliced = false, tint = Color.WHITE): Promise<Sprite | null> {
+    static async sprite(parent: Node, assetPath: string, size: Size, position: Vec3 = Vec3.ZERO, sliced = false, tint = Color.WHITE, fit: SpriteFit = "stretch"): Promise<Sprite | null> {
         const node = new Node(`Icon:${assetPath}`);
         node.layer = parent.layer;
-        node.addComponent(UITransform).setContentSize(size);
+        const transform = node.addComponent(UITransform);
+        transform.setContentSize(size);
         const sprite = node.addComponent(Sprite);
         node.setPosition(position);
         parent.addChild(node);
@@ -196,6 +200,14 @@ export class UIBuilder {
         }
         const frame = new SpriteFrame();
         const layout = textureFrameLayout(assetPath);
+        const sourceWidth = layout?.width ?? texture.width;
+        const sourceHeight = layout?.height ?? texture.height;
+        const scale = fit === "cover" ? Math.max(size.width / sourceWidth, size.height / sourceHeight)
+            : fit === "contain" ? Math.min(size.width / sourceWidth, size.height / sourceHeight)
+                : 0;
+        if (scale > 0) {
+            transform.setContentSize(Math.round(sourceWidth * scale), Math.round(sourceHeight * scale));
+        }
         if (layout) {
             frame.reset({
                 texture,

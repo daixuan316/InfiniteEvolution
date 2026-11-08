@@ -16,6 +16,19 @@ test("trims generated panel art to its visible pixels and preserves nine-slice b
     });
 });
 
+test("compact resource rails exclude the detached left-side canvas remnant", () => {
+    assert.deepEqual(textureFrameLayout("gui/ui-p0/texture/common/03-card-compact"), {
+        x: 61,
+        y: 86,
+        width: 161,
+        height: 170,
+        borderTop: 28,
+        borderBottom: 28,
+        borderLeft: 28,
+        borderRight: 28,
+    });
+});
+
 test("trims HUD plates without forcing nine-slice borders", () => {
     assert.deepEqual(textureFrameLayout("gui/ui-p0/texture/exploration-hud/01-player-health-frame"), {
         x: 20,

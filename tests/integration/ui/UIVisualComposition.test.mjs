@@ -28,6 +28,33 @@ test("UI builder exposes texture-backed surfaces and HUD plates", () => {
     assert.match(source, /frame\.reset\(/);
 });
 
+test("generated button frames crop out guide debris before nine-slice scaling", () => {
+    const source = read("assets/script/game/common/ui/TextureFrameLayout.ts");
+
+    assert.match(source, /05-button-primary`\]: \{ x: 22, y: 121, width: 228, height: 110/);
+    assert.match(source, /06-button-secondary`\]: \{ x: 27, y: 122, width: 227, height: 109/);
+    assert.match(source, /07-button-warning`\]: \{ x: 30, y: 122, width: 222, height: 109/);
+    assert.doesNotMatch(source, /05-button-primary`\]: \{ x: 20, y: 17/);
+    assert.doesNotMatch(source, /06-button-secondary`\]: \{ x: 0, y: 0/);
+});
+
+test("wide navigation buttons use a horizontal icon and label layout", () => {
+    const source = read("assets/script/game/common/ui/UIBuilder.ts");
+
+    assert.match(source, /const wide = size\.width >= size\.height \* 2/);
+    assert.match(source, /wide \? -size\.width \/ 2 \+ 44/);
+    assert.match(source, /wide \? 24 : 0/);
+});
+
+test("non-sliced art supports aspect-safe contain and cover fitting", () => {
+    const source = read("assets/script/game/common/ui/UIBuilder.ts");
+
+    assert.match(source, /export type SpriteFit = "stretch" \| "contain" \| "cover"/);
+    assert.match(source, /fit === "cover" \? Math\.max/);
+    assert.match(source, /fit === "contain" \? Math\.min/);
+    assert.match(source, /this\.sprite\(parent, assetPath, size, Vec3\.ZERO, false, tint, "cover"\)/);
+});
+
 test("pause and confirmation overlays keep the authored texture language", () => {
     const pause = read("assets/script/game/ui/PauseOverlayViewComp.ts");
     const confirm = read("assets/script/game/ui/ConfirmDialogViewComp.ts");
@@ -35,6 +62,8 @@ test("pause and confirmation overlays keep the authored texture language", () =>
         assert.match(source, /UIBuilder\.surface/);
         assert.match(source, /UIBuilder\.navButton/);
     }
+    assert.match(confirm, /"DialogPanel", new Size\(610, 330\), Vec3\.ZERO, "large"/);
+    assert.doesNotMatch(confirm, /"DialogPanel", new Size\(610, 330\), Vec3\.ZERO, "warning"/);
 });
 
 test("hall composes the generated ark art with textured game panels", () => {
