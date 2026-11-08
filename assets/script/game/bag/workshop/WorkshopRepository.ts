@@ -79,14 +79,21 @@ export class LocalStorageWorkshopRepository implements WorkshopRepository {
         if (raw === null) return initialized ? repairedEmptySnapshot(true) : null;
         try {
             const parsed: unknown = JSON.parse(raw);
-            return isSnapshotShape(parsed) ? cloneSnapshot(parsed) : repairedEmptySnapshot(initialized);
+            if (!isSnapshotShape(parsed)) return repairedEmptySnapshot(true);
+            const snapshot = cloneSnapshot(parsed);
+            snapshot.initialized = true;
+            return snapshot;
         } catch {
-            return repairedEmptySnapshot(initialized);
+            return repairedEmptySnapshot(true);
         }
     }
 
     save(snapshot: WorkshopSnapshot): void {
         this.store.setItem(WORKSHOP_SAVE_KEY, JSON.stringify(cloneSnapshot(snapshot)));
-        this.store.setItem(WORKSHOP_INITIALIZED_KEY, "1");
+        try {
+            this.store.setItem(WORKSHOP_INITIALIZED_KEY, "1");
+        } catch {
+            // The versioned snapshot is authoritative; the marker only repairs legacy/corrupt data.
+        }
     }
 }

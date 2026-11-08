@@ -27,7 +27,9 @@ export class WorkshopRuntime {
     sync(): SyncResult {
         const result = this.service.sync(this.now());
         if (result.changed) {
-            this.publish("InventoryChanged", { completedRecipeIds: result.completedRecipeIds });
+            if (result.completedRecipeIds.length > 0) {
+                this.publish("InventoryChanged", { completedRecipeIds: result.completedRecipeIds });
+            }
             this.publish("WorkshopQueueChanged", { completedRecipeIds: result.completedRecipeIds });
             for (const recipeId of result.completedRecipeIds) {
                 this.publish("CraftCompleted", { recipeId });
@@ -41,4 +43,14 @@ export class WorkshopRuntime {
         if (added) this.publish("InventoryChanged", { itemId, amount });
         return added;
     }
+}
+
+export function startWorkshopRuntime(
+    service: WorkshopService,
+    now: () => number,
+    publish: WorkshopEventPublisher,
+): WorkshopRuntime {
+    const runtime = new WorkshopRuntime(service, now, publish);
+    runtime.sync();
+    return runtime;
 }

@@ -19,3 +19,23 @@ export function actionTextForReason(reason: EnqueueFailure | null): string {
         default: return "开始制造";
     }
 }
+
+export interface MaterialRequirementLayout {
+    rows: number[];
+    footerY: number;
+}
+
+export function materialRequirementLayout(height: number, rowCount: number): MaterialRequirementLayout {
+    const safeHeight = Number.isFinite(height) ? Math.max(120, height) : 120;
+    const count = Number.isSafeInteger(rowCount) ? Math.max(0, rowCount) : 0;
+    const firstRowY = safeHeight / 2 - 78;
+    const footerY = -safeHeight / 2 + 26;
+    const lastRowY = footerY + 36;
+    if (count === 0) return { rows: [], footerY };
+    if (count === 1) return { rows: [firstRowY], footerY };
+    const spacing = Math.min(54, (firstRowY - lastRowY) / (count - 1));
+    return {
+        rows: Array.from({ length: count }, (_, index) => firstRowY - spacing * index),
+        footerY,
+    };
+}

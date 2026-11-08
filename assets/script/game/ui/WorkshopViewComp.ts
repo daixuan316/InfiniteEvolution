@@ -3,7 +3,7 @@ import { Color, HorizontalTextAlignment, Label, Size, Vec3, _decorator } from "c
 import { oops } from "../../../../extensions/oops-plugin-framework/assets/core/Oops";
 import { workshopRuntime } from "../bag/WorkshopRuntimeProvider";
 import { ITEM_DEFINITIONS, WORKSHOP_RECIPES } from "../bag/workshop/WorkshopCatalog.ts";
-import { actionTextForReason, formatRemainingTime } from "../bag/workshop/WorkshopPresentation.ts";
+import { actionTextForReason, formatRemainingTime, materialRequirementLayout } from "../bag/workshop/WorkshopPresentation.ts";
 import type { EnqueueFailure, WorkshopCategory, WorkshopRecipe, WorkshopTask } from "../bag/workshop/WorkshopTypes.ts";
 import { GamePage } from "../common/ui/GamePage";
 import type { SafeFrame } from "../common/ui/UIBuilder";
@@ -94,12 +94,12 @@ export class WorkshopViewComp extends GamePage {
 
         CATEGORIES.forEach((category, index) => {
             const selected = category.id === this.selectedCategory;
-            const button = UIBuilder.slot(panel, `Category:${category.id}`, new Size((width - 42) / 2, 62), new Vec3((index % 2 === 0 ? -1 : 1) * (width - 30) / 4, height / 2 - 82 - Math.floor(index / 2) * 70), selected);
+            const button = UIBuilder.slot(panel, `Category:${category.id}`, new Size((width - 42) / 2, UI_THEME.touchMin), new Vec3((index % 2 === 0 ? -1 : 1) * (width - 30) / 4, height / 2 - 86 - Math.floor(index / 2) * 80), selected);
             UIBuilder.label(button, `CategoryLabel:${category.id}`, category.label, new Size((width - 58) / 2, 34), Vec3.ZERO, 18, selected ? UI_THEME.colors.orange : UI_THEME.colors.white);
             this.bindTouch(button, () => this.selectCategory(category.id));
         });
 
-        const listHeight = height - 218;
+        const listHeight = height - 238;
         const list = UIBuilder.surface(panel, "RecipeList", new Size(width - 30, listHeight), new Vec3(0, -height / 2 + listHeight / 2 + 16), "card");
         const recipes = WORKSHOP_RECIPES.filter((recipe) => recipe.category === this.selectedCategory);
         recipes.forEach((recipe, index) => {
@@ -128,16 +128,17 @@ export class WorkshopViewComp extends GamePage {
         const materialsHeight = Math.max(210, height - 310);
         const materials = UIBuilder.surface(panel, "MaterialRequirements", new Size(width - 36, materialsHeight), new Vec3(0, -height / 2 + materialsHeight / 2 + 16), "card");
         UIBuilder.label(materials, "MaterialsTitle", "材料需求", new Size(width - 70, 34), new Vec3(0, materialsHeight / 2 - 28), 19, UI_THEME.colors.white, HorizontalTextAlignment.LEFT);
+        const materialLayout = materialRequirementLayout(materialsHeight, recipe.inputs.length);
         recipe.inputs.forEach((input, index) => {
             const item = ITEM_DEFINITIONS[input.itemId];
             const owned = workshopRuntime.service.inventory.count(input.itemId);
             const enough = owned >= input.amount;
-            const rowY = materialsHeight / 2 - 78 - index * 54;
+            const rowY = materialLayout.rows[index];
             void UIBuilder.icon(materials, item.icon, 34, new Vec3(-width / 2 + 58, rowY));
             UIBuilder.label(materials, `MaterialName:${input.itemId}`, item.name, new Size(width * 0.48, 30), new Vec3(-18, rowY), 17, UI_THEME.colors.white, HorizontalTextAlignment.LEFT);
             UIBuilder.label(materials, `MaterialAmount:${input.itemId}`, `${owned} / ${input.amount}`, new Size(width * 0.3, 30), new Vec3(width / 2 - 92, rowY), 18, enough ? UI_THEME.colors.cyan : UI_THEME.colors.orange, HorizontalTextAlignment.RIGHT);
         });
-        UIBuilder.label(materials, "CraftDuration", `制造耗时  ${formatRemainingTime(recipe.durationMs)}`, new Size(width - 72, 30), new Vec3(0, -materialsHeight / 2 + 28), 16, UI_THEME.colors.muted, HorizontalTextAlignment.RIGHT);
+        UIBuilder.label(materials, "CraftDuration", `制造耗时  ${formatRemainingTime(recipe.durationMs)}`, new Size(width - 72, 30), new Vec3(0, materialLayout.footerY), 16, UI_THEME.colors.muted, HorizontalTextAlignment.RIGHT);
     }
 
     private renderQueuePanel(x: number, y: number, width: number, height: number): void {

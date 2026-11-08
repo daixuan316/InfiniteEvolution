@@ -108,6 +108,69 @@ test("adding gathered items persists and rolls back when saving fails", () => {
     assert.equal(service.inventory.count("scrap"), 125);
 });
 
+test("external additions cannot consume capacity reserved by queued outputs", () => {
+    const service = makeService({ scrap: 8, electronics: 6, alloy: 4 }, new MemoryWorkshopRepository(), 3);
+    assert.equal(service.enqueue("energy_cell", NOW).ok, true);
+
+    assert.equal(service.addItem("assault_rifle", 1), true);
+    assert.equal(service.addItem("shotgun", 1), true);
+    assert.equal(service.addItem("armor_plate", 1), false);
+    assert.equal(service.inventory.count("armor_plate"), 0);
+});
+
+test("duplicate recipe input rows are aggregated before validation and removal", () => {
+    const duplicateRecipe = {
+        id: "duplicate_scrap",
+        name: "重复废料配方",
+        category: "supply",
+        icon: "resources-items/01-scrap",
+        inputs: [{ itemId: "scrap", amount: 20 }, { itemId: "scrap", amount: 20 }],
+        outputId: "medkit",
+        outputAmount: 1,
+        durationMs: 1_000,
+        requiredWorkshopLevel: 1,
+    };
+    const insufficientRepository = new MemoryWorkshopRepository(snapshot({ scrap: 30 }));
+    const insufficient = new WorkshopService({ repository: insufficientRepository, recipes: [duplicateRecipe] });
+    assert.deepEqual(insufficient.enqueue("duplicate_scrap", NOW), { ok: false, reason: "materials-missing" });
+    assert.equal(insufficient.inventory.count("scrap"), 30);
+
+    const enoughRepository = new MemoryWorkshopRepository(snapshot({ scrap: 50 }));
+    const enough = new WorkshopService({ repository: enoughRepository, recipes: [duplicateRecipe], idFactory: () => "duplicate-task" });
+    assert.equal(enough.enqueue("duplicate_scrap", NOW).ok, true);
+    assert.equal(enough.inventory.count("scrap"), 10);
+});
+
+test("over-capacity repair keeps valid entries instead of clearing everything", () => {
+    const repository = new MemoryWorkshopRepository(snapshot({ scrap: 1_000, electronics: 5 }));
+    const service = makeService(undefined, repository, 1);
+
+    assert.deepEqual(service.inventory.toSnapshot(), { electronics: 5 });
+});
+
+test("repair preserves excess paid tasks and offline sync completes all of them", () => {
+    const tasks = [1, 2, 3, 4].map((number) => ({
+        id: `legacy-${number}`,
+        recipeId: "medkit",
+        startedAt: 100,
+        endsAt: 200,
+        status: "crafting",
+    }));
+    const repository = new MemoryWorkshopRepository(snapshot({}, tasks));
+    const service = makeService(undefined, repository);
+
+    assert.equal(service.getTasks().length, 4);
+    assert.deepEqual(service.sync(300).completedRecipeIds, ["medkit", "medkit", "medkit", "medkit"]);
+    assert.equal(service.inventory.count("medkit"), 4);
+});
+
+test("initial persistence failure does not abort runtime construction", () => {
+    const repository = new MemoryWorkshopRepository();
+    repository.failNextSave = true;
+
+    assert.doesNotThrow(() => makeService(undefined, repository));
+});
+
 test("system clock rollback never increases a task beyond its original duration", () => {
     const service = makeService();
     service.enqueue("assault_rifle", NOW);

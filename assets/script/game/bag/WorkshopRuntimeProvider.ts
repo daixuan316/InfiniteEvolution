@@ -2,7 +2,7 @@ import { sys } from "cc";
 
 import { oops } from "../../../../extensions/oops-plugin-framework/assets/core/Oops";
 import { GameEvent } from "../common/config/GameEvent";
-import { WorkshopRuntime, WorkshopRuntimeEvent } from "./WorkshopRuntime.ts";
+import { startWorkshopRuntime, WorkshopRuntimeEvent } from "./WorkshopRuntime.ts";
 import { LocalStorageWorkshopRepository } from "./workshop/WorkshopRepository.ts";
 import { WorkshopService } from "./workshop/WorkshopService.ts";
 
@@ -19,7 +19,7 @@ const service = new WorkshopService({
     idFactory: () => `craft-${Date.now()}-${++taskSequence}`,
 });
 
-export const workshopRuntime = new WorkshopRuntime(
+export const workshopRuntime = startWorkshopRuntime(
     service,
     () => Date.now(),
     (event, payload) => oops.message.dispatchEvent(EVENT_MAP[event], payload),

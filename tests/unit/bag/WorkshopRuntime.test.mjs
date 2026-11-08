@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { WorkshopRuntime } from "../../../assets/script/game/bag/WorkshopRuntime.ts";
+import { startWorkshopRuntime, WorkshopRuntime } from "../../../assets/script/game/bag/WorkshopRuntime.ts";
 import { MemoryWorkshopRepository } from "../../../assets/script/game/bag/workshop/WorkshopRepository.ts";
 import { WorkshopService } from "../../../assets/script/game/bag/workshop/WorkshopService.ts";
 
@@ -32,4 +32,33 @@ test("runtime publishes each offline completion once", () => {
     events.length = 0;
     runtime.sync();
     assert.deepEqual(events, []);
+});
+
+test("runtime bootstrap reconciles offline completion before any page opens", () => {
+    const repository = new MemoryWorkshopRepository();
+    const first = new WorkshopService({ repository, idFactory: () => "offline-task" });
+    first.enqueue("assault_rifle", 1_000_000);
+    const restarted = new WorkshopService({ repository });
+
+    startWorkshopRuntime(restarted, () => 1_045_000, () => undefined);
+
+    assert.equal(restarted.inventory.count("assault_rifle"), 1);
+    assert.deepEqual(restarted.getTasks(), []);
+});
+
+test("a queue-only repair does not publish a false inventory change", () => {
+    const repository = new MemoryWorkshopRepository({
+        version: 1,
+        initialized: true,
+        workshopLevel: 1,
+        inventory: {},
+        tasks: [{ id: "unknown", recipeId: "removed", startedAt: 1, endsAt: 2, status: "crafting" }],
+    });
+    const events = [];
+    const service = new WorkshopService({ repository });
+    const runtime = new WorkshopRuntime(service, () => 3, (event) => events.push(event));
+
+    runtime.sync();
+
+    assert.deepEqual(events, ["WorkshopQueueChanged"]);
 });

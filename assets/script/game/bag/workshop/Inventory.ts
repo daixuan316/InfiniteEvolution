@@ -22,10 +22,8 @@ export class Inventory {
         for (const [itemId, amount] of Object.entries(initial)) {
             if (this.definitions[itemId] && isPositiveInteger(amount)) {
                 this.counts.set(itemId, amount);
+                if (this.usedSlots > this.capacity) this.counts.delete(itemId);
             }
-        }
-        if (this.usedSlots > this.capacity) {
-            this.counts.clear();
         }
     }
 

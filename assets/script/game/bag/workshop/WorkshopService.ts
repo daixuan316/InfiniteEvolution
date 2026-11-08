@@ -73,11 +73,15 @@ export class WorkshopService {
             : (options.workshopLevel ?? 1);
         const initialInventory = this.initialized ? (loaded?.inventory ?? {}) : (options.starterInventory ?? STARTER_INVENTORY);
         this.inventory = new Inventory(this.capacity, this.definitions, initialInventory);
-        this.tasks = (loaded?.tasks ?? []).filter(validTask).slice(0, 3).map((task) => ({ ...task }));
+        this.tasks = (loaded?.tasks ?? []).filter(validTask).map((task) => ({ ...task }));
 
         if (!this.initialized) {
             this.initialized = true;
-            this.persist();
+            try {
+                this.persist();
+            } catch {
+                // Keep a playable in-memory state; later commands will retry the durable save.
+            }
         }
     }
 
@@ -94,8 +98,8 @@ export class WorkshopService {
         if (!recipe) return "recipe-missing";
         if (recipe.requiredWorkshopLevel > this.workshopLevel) return "recipe-locked";
         if (this.tasks.length >= 3) return "queue-full";
-        for (const input of recipe.inputs) {
-            if (this.inventory.count(input.itemId) < input.amount) return "materials-missing";
+        for (const [itemId, amount] of Object.entries(this.requirementsFor(recipe))) {
+            if (this.inventory.count(itemId) < amount) return "materials-missing";
         }
         if (!this.canReserveOutput(recipe)) return "output-full";
         return null;
@@ -107,8 +111,11 @@ export class WorkshopService {
 
         const recipe = this.recipesById[recipeId];
         const before = this.toSnapshot();
-        for (const input of recipe.inputs) {
-            this.inventory.remove(input.itemId, input.amount);
+        for (const [itemId, amount] of Object.entries(this.requirementsFor(recipe))) {
+            if (!this.inventory.remove(itemId, amount)) {
+                this.restore(before);
+                return { ok: false, reason: "materials-missing" };
+            }
         }
         const safeNow = validTimestamp(now) ? now : 0;
         const task: WorkshopTask = {
@@ -131,7 +138,9 @@ export class WorkshopService {
 
     addItem(itemId: string, amount: number): boolean {
         const before = this.toSnapshot();
-        if (!this.inventory.add(itemId, amount)) return false;
+        const additions = this.queuedOutputReservations();
+        additions[itemId] = (additions[itemId] ?? 0) + amount;
+        if (!this.inventory.canFit(additions) || !this.inventory.add(itemId, amount)) return false;
         try {
             this.persist();
             return true;
@@ -196,16 +205,29 @@ export class WorkshopService {
 
     private canReserveOutput(candidate: WorkshopRecipe): boolean {
         const projected = new Inventory(this.capacity, this.definitions, this.inventory.toSnapshot());
-        for (const input of candidate.inputs) {
-            if (!projected.remove(input.itemId, input.amount)) return false;
+        for (const [itemId, amount] of Object.entries(this.requirementsFor(candidate))) {
+            if (!projected.remove(itemId, amount)) return false;
         }
+        const additions = this.queuedOutputReservations();
+        additions[candidate.outputId] = (additions[candidate.outputId] ?? 0) + candidate.outputAmount;
+        return projected.canFit(additions);
+    }
+
+    private requirementsFor(recipe: WorkshopRecipe): InventorySnapshot {
+        const requirements: InventorySnapshot = {};
+        for (const input of recipe.inputs) {
+            requirements[input.itemId] = (requirements[input.itemId] ?? 0) + input.amount;
+        }
+        return requirements;
+    }
+
+    private queuedOutputReservations(): InventorySnapshot {
         const additions: InventorySnapshot = {};
         for (const task of this.tasks) {
             const recipe = this.recipesById[task.recipeId];
             if (recipe) additions[recipe.outputId] = (additions[recipe.outputId] ?? 0) + recipe.outputAmount;
         }
-        additions[candidate.outputId] = (additions[candidate.outputId] ?? 0) + candidate.outputAmount;
-        return projected.canFit(additions);
+        return additions;
     }
 
     private toSnapshot(): WorkshopSnapshot {
