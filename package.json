@@ -9,7 +9,7 @@
   "description": "无限进化·末世生存 - 抖音小游戏（oops-game-kit）",
   "name": "InfiniteEvolutionDoomsdaySurvival",
   "scripts": {
-    "test:battle": "node --test tests/unit/combat/*.test.mjs tests/unit/shelter/*.test.mjs tests/unit/battle/*.test.mjs",
+    "test:battle": "node --test tests/unit/combat/*.test.mjs tests/unit/shelter/*.test.mjs tests/unit/battle/*.test.mjs tests/unit/world/*.test.mjs",
     "test:ui": "node --test tests/unit/ui/*.test.mjs tests/unit/battle/*.test.mjs tests/integration/ui/*.test.mjs"
   },
   "type": "module",

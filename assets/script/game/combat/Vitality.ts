@@ -1,4 +1,4 @@
-export type VitalityState = "active" | "downed" | "dead" | "disabled";
+export type VitalityState = "active" | "downed" | "dead" | "disabled" | "destroyed";
 export type VitalityZeroState = Exclude<VitalityState, "active">;
 export type VitalityRejectReason = "invalid-amount" | "inactive-target" | "not-repairable";
 

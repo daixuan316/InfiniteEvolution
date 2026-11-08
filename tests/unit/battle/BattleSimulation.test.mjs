@@ -164,30 +164,77 @@ test("player auto-fire damages and kills only active enemies", () => {
     assert.notEqual(simulation.playerTarget?.id, enemy.id);
 });
 
-test("monsters damage a nearby barricade on attack intervals and it can be repaired", () => {
+test("loot requires proximity and grants its rewards only once", () => {
+    const simulation = new BattleSimulation(createHospitalDistrictMap());
+    const loot = simulation.loot[0];
+
+    assert.equal(simulation.interact(loot.id).accepted, false);
+    simulation.player.x = loot.x;
+    simulation.player.y = loot.y;
+
+    const first = simulation.interact(loot.id);
+    assert.equal(first.accepted, true);
+    assert.equal(loot.opened, true);
+    assert.ok(Object.values(simulation.resources).some((amount) => amount > 0));
+    assert.equal(simulation.interact(loot.id).accepted, false);
+});
+
+test("nearest interaction ignores hidden loot and reports the closest available action", () => {
+    const simulation = new BattleSimulation(createHospitalDistrictMap());
+    const visible = simulation.loot.find((item) => item.discovered);
+    const hidden = simulation.loot.find((item) => !item.discovered);
+
+    simulation.player.x = hidden.x;
+    simulation.player.y = hidden.y;
+    assert.equal(simulation.nearestInteraction, null);
+
+    simulation.player.x = visible.x;
+    simulation.player.y = visible.y;
+    assert.deepEqual(simulation.nearestInteraction, {
+        id: visible.id,
+        category: "loot",
+        name: visible.name,
+        action: "open",
+        distance: 0,
+    });
+});
+
+test("radar investigation reveals hidden loot without opening it", () => {
+    const simulation = new BattleSimulation(createHospitalDistrictMap());
+    const hidden = simulation.loot.find((item) => item.typeId === "hidden-cache");
+    const radar = simulation.explorationPoints.find((item) => item.typeId === "radar-terminal");
+
+    assert.equal(hidden.discovered, false);
+    simulation.player.x = radar.x;
+    simulation.player.y = radar.y;
+    assert.equal(simulation.interact(radar.id).accepted, true);
+    assert.equal(hidden.discovered, true);
+    assert.equal(hidden.opened, false);
+    assert.equal(simulation.interact(radar.id).accepted, false);
+});
+
+test("player prioritizes enemies then auto-fires at and destroys a nearby barrier", () => {
     const map = createHospitalDistrictMap();
     const simulation = new BattleSimulation(map);
+    const barrier = simulation.structures[0];
     const enemy = simulation.enemies[0];
-    const barricade = simulation.structures[0];
-    enemy.x = barricade.x + enemy.radius + barricade.radius + simulation.meleeAttackMargin - 1;
-    enemy.y = barricade.y;
 
-    assert.equal(map.isWorldWalkable(barricade, barricade.radius), true);
-    const before = barricade.vitality.currentHealth;
-    advance(simulation, 0.2);
-    const afterFirstHit = barricade.vitality.currentHealth;
-    assert.ok(afterFirstHit < before);
+    simulation.player.x = barrier.x - 180;
+    simulation.player.y = barrier.y;
+    enemy.x = simulation.player.x + 100;
+    enemy.y = simulation.player.y;
+    simulation.update(1 / 60);
+    assert.equal(simulation.playerTarget?.id, enemy.id);
 
-    advance(simulation, 0.2);
-    assert.equal(barricade.vitality.currentHealth, afterFirstHit);
+    for (const activeEnemy of simulation.activeEnemies) activeEnemy.vitality.applyDamage(9999);
+    const barrierHealth = barrier.vitality.currentHealth;
+    for (let index = 0; index < 300 && barrier.vitality.active; index++) simulation.update(1 / 60);
 
-    barricade.vitality.applyDamage(9999);
-    assert.equal(barricade.vitality.state, "disabled");
-    const repaired = simulation.repairStructure(barricade.id, 80);
-    assert.ok(repaired);
-    assert.equal(repaired.accepted, true);
-    assert.equal(barricade.vitality.state, "active");
-    assert.equal(simulation.repairStructure("missing", 10), null);
+    assert.ok(barrier.vitality.currentHealth < barrierHealth);
+    assert.equal(barrier.vitality.active, false);
+    assert.equal(barrier.vitality.state, "destroyed");
+    assert.equal(simulation.playerTarget, null);
+    for (const cell of map.barriers[0].blockedCells) assert.equal(map.isWalkable(cell), true);
 });
 
 test("downed player cannot move, dodge, or attack", () => {
@@ -321,4 +368,22 @@ test("lethal projectile marks its hit event as a zero transition", () => {
 
     assert.equal(simulation.hitEvents[0].becameZero, true);
     assert.equal(enemy.vitality.state, "dead");
+});
+
+test("night horde warns before dynamically spawning its first wave", () => {
+    const simulation = new BattleSimulation(createHospitalDistrictMap());
+    const initialEnemyCount = simulation.enemies.length;
+
+    assert.equal(simulation.startHorde(7), true);
+    assert.equal(simulation.startHorde(7), false);
+    assert.equal(simulation.hordePhase, "warning");
+
+    advance(simulation, 4.8);
+    assert.equal(simulation.enemies.length, initialEnemyCount);
+
+    advance(simulation, 0.5);
+    assert.equal(simulation.hordePhase, "probe");
+    assert.ok(simulation.enemies.length > initialEnemyCount);
+    assert.ok(simulation.remainingHordeThreats >= simulation.activeEnemies.length);
+    assert.equal(new Set(simulation.enemies.map((enemy) => enemy.id)).size, simulation.enemies.length);
 });

@@ -24,6 +24,7 @@ import { GamePage } from "../common/ui/GamePage";
 import { SafeFrame, UIBuilder } from "../common/ui/UIBuilder";
 import { uiNavigation } from "../common/ui/UIRuntime";
 import { UI_THEME } from "../common/ui/UITheme";
+import { DayClock, explorationTimeScale, formatDayTime, type DayPressure } from "../world/model/DayClock";
 import { ActorAction, ActorAnimator } from "./ActorAnimator";
 import { cameraTargetFor } from "./BattleCamera";
 import { battleControlLayout } from "./BattleHUDLayout";
@@ -31,6 +32,17 @@ import { createHospitalDistrictMap, WorldPoint } from "./BattleMapModel";
 import { BattleSimulation } from "./BattleSimulation";
 
 const { ccclass } = _decorator;
+
+const DAY_DURATION_SECONDS = 8 * 60;
+const DAY_WARNING_SECONDS = 2 * 60;
+const DAY_NIGHT_SECONDS = 0;
+const DAY_HUNT_SECONDS = -60;
+const DAY_PRESSURE_PRESENTATION: Readonly<Record<DayPressure, { readonly text: string; readonly color: Color }>> = {
+    safe: { text: "安全探索", color: UI_THEME.colors.cyan },
+    warning: { text: "日落警戒", color: UI_THEME.colors.orange },
+    night: { text: "夜幕降临", color: UI_THEME.colors.danger },
+    hunt: { text: "尸群追猎", color: UI_THEME.colors.magenta },
+};
 
 interface DamageFeedback {
     readonly node: Node;
@@ -79,6 +91,10 @@ export class BattleHUDViewComp extends GamePage {
     private playerHealthBar!: Node;
     private playerShieldBar!: Node;
     private downedLabel!: Label;
+    private readonly dayClock = new DayClock(DAY_DURATION_SECONDS, DAY_WARNING_SECONDS, DAY_NIGHT_SECONDS, DAY_HUNT_SECONDS);
+    private dayTimeLabel!: Label;
+    private dayPressureLabel!: Label;
+    private dayProgressBar!: Node;
     private enemyNodes: Node[] = [];
     private enemyAnimators: ActorAnimator[] = [];
     private enemyHealthBars: Node[] = [];
@@ -113,7 +129,9 @@ export class BattleHUDViewComp extends GamePage {
     }
 
     update(deltaTime: number): void {
-        if (this.paused || this.fullMapPanel?.active) return;
+        const fullMapOpen = Boolean(this.fullMapPanel?.active);
+        this.advanceDayClock(deltaTime, explorationTimeScale(this.paused, fullMapOpen));
+        if (this.paused || fullMapOpen) return;
         this.simulation.update(deltaTime);
         this.syncActors();
         this.syncVitality();
@@ -284,9 +302,35 @@ export class BattleHUDViewComp extends GamePage {
     private renderDayTimer(frame: SafeFrame): void {
         const timer = UIBuilder.hudPlate(this.node, "DayTimer", "exploration-hud/05-day-timer-frame", new Size(340, 112), new Vec3(0, frame.top - 54));
         void UIBuilder.icon(timer, "hud-combat/05-day-timer", 42, new Vec3(-112, 18));
-        UIBuilder.label(timer, "DayTime", "04:26", new Size(130, 42), new Vec3(5, 18), 28, UI_THEME.colors.white);
-        UIBuilder.label(timer, "Sunset", "日落警戒", new Size(94, 28), new Vec3(112, 18), 16, UI_THEME.colors.orange);
-        UIBuilder.progressBar(timer, "DayProgress", new Size(254, 19), new Vec3(0, -24), 0.63, UI_THEME.colors.orange);
+        this.dayTimeLabel = UIBuilder.label(timer, "DayTime", "", new Size(130, 42), new Vec3(5, 18), 28, UI_THEME.colors.white);
+        this.dayPressureLabel = UIBuilder.label(timer, "Sunset", "", new Size(94, 28), new Vec3(112, 18), 16, UI_THEME.colors.orange);
+        this.dayProgressBar = UIBuilder.progressBar(timer, "DayProgress", new Size(254, 19), new Vec3(0, -24), 1, UI_THEME.colors.orange);
+        this.syncDayTimer();
+    }
+
+    private advanceDayClock(deltaTime: number, timeScale: number): void {
+        if (timeScale <= 0) return;
+        const previousSecond = Math.ceil(this.dayClock.remaining);
+        const previousPressure = this.dayClock.pressure;
+        this.dayClock.tick(deltaTime, timeScale);
+        this.syncDayTimer();
+
+        if (Math.ceil(this.dayClock.remaining) !== previousSecond) {
+            oops.message.dispatchEvent(GameEvent.DayTimeChanged, this.dayClock.remaining);
+        }
+        if (this.dayClock.pressure !== previousPressure) {
+            oops.message.dispatchEvent(GameEvent.DayPressureChanged, this.dayClock.pressure);
+        }
+    }
+
+    private syncDayTimer(): void {
+        this.dayTimeLabel.string = formatDayTime(this.dayClock.remaining);
+        UIBuilder.setProgressBarRatio(this.dayProgressBar, this.dayClock.remainingRatio);
+
+        const presentation = DAY_PRESSURE_PRESENTATION[this.dayClock.pressure];
+        this.dayPressureLabel.string = presentation.text;
+        this.dayPressureLabel.color = presentation.color;
+        this.dayTimeLabel.color = presentation.color;
     }
 
     private renderMinimap(frame: SafeFrame): void {
@@ -741,8 +785,8 @@ export class BattleHUDViewComp extends GamePage {
     }
 
     private setAnimatorsEnabled(enabled: boolean): void {
-        this.playerAnimator?.setEnabled(enabled);
-        this.enemyAnimators.forEach((animator) => animator.setEnabled(enabled));
+        if (this.playerAnimator) this.playerAnimator.enabled = enabled;
+        this.enemyAnimators.forEach((animator) => { animator.enabled = enabled; });
     }
 
     private createNode(parent: Node, name: string, size: Size, position: Vec3): Node {

@@ -18,4 +18,8 @@ export enum GameEvent {
     GamePaused = "GamePaused",
     /** 暂停覆盖层关闭 */
     GameResumed = "GameResumed",
+    /** 白昼探索剩余时间变化 */
+    DayTimeChanged = "DayTimeChanged",
+    /** 白昼压力阶段变化 */
+    DayPressureChanged = "DayPressureChanged",
 }

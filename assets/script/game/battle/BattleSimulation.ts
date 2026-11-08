@@ -1,9 +1,17 @@
-import type { BattleMapDefinition, GridPoint, WorldPoint } from "./BattleMapModel.ts";
+import type {
+    BattleMapDefinition,
+    GridPoint,
+    MapExplorationDefinition,
+    MapLootDefinition,
+    MapReward,
+    ResourceKind,
+    WorldPoint,
+} from "./BattleMapModel.ts";
 import { GridPathfinder } from "./GridPathfinder.ts";
 import { resolveDamage } from "../combat/DamageResolver.ts";
 import { VitalityRuntime, type VitalityChangeResult } from "../combat/Vitality.ts";
 
-interface CombatTarget extends WorldPoint {
+export interface CombatTarget extends WorldPoint {
     readonly id: string;
     readonly radius: number;
     readonly defense: number;
@@ -15,7 +23,39 @@ export interface BattleActor extends CombatTarget {
 }
 
 export interface BattleStructure extends CombatTarget {
-    readonly kind: "barricade";
+    readonly kind: "breakable-barrier";
+    readonly name: string;
+}
+
+export interface BattleLoot extends WorldPoint, MapLootDefinition {
+    discovered: boolean;
+    opened: boolean;
+}
+
+export interface BattleExplorationPoint extends WorldPoint, MapExplorationDefinition {
+    completed: boolean;
+}
+
+export interface BattleInteractionTarget {
+    readonly id: string;
+    readonly category: "loot" | "exploration";
+    readonly name: string;
+    readonly action: "open" | "investigate";
+    readonly distance: number;
+}
+
+export interface BattleInteractionResult {
+    readonly accepted: boolean;
+    readonly targetId: string;
+    readonly message: string;
+    readonly rewards: readonly MapReward[];
+    readonly revealedIds: readonly string[];
+}
+
+export interface BattleNoticeEvent {
+    readonly id: string;
+    readonly kind: "loot" | "exploration" | "reveal" | "barrier";
+    readonly message: string;
 }
 
 export interface EnemyAgent extends BattleActor {
@@ -83,18 +123,29 @@ export class BattleSimulation {
     readonly playerAttackDamage = 35;
     readonly projectileSpeed = 1400;
     readonly projectileLifetime = 1.2;
+    readonly interactionRange = 145;
     readonly player: BattleActor;
     readonly enemies: EnemyAgent[];
     readonly structures: BattleStructure[];
+    readonly loot: BattleLoot[];
+    readonly explorationPoints: BattleExplorationPoint[];
+    readonly resources: Record<ResourceKind, number> = {
+        scrap: 0,
+        medical: 0,
+        ammo: 0,
+        parts: 0,
+        intel: 0,
+    };
     readonly projectiles: BattleProjectile[] = [];
     readonly hitEvents: CombatHitEvent[] = [];
+    readonly noticeEvents: BattleNoticeEvent[] = [];
     playerPath: GridPoint[] = [];
     /** Animation-facing battle state, refreshed every update. */
     playerMoving = false;
     playerAutoAttacking = false;
     playerDodgePlayback = 0;
     playerDodgeCount = 0;
-    playerTarget: BattleActor | null = null;
+    playerTarget: CombatTarget | null = null;
     facing: WorldPoint = { x: 1, y: 0 };
     sprinting = false;
     private playerPathIndex = 0;
@@ -103,6 +154,7 @@ export class BattleSimulation {
     private playerAttackCooldown = 0;
     private nextProjectileId = 1;
     private nextHitEventId = 1;
+    private nextNoticeEventId = 1;
     private readonly pathfinder: GridPathfinder;
 
     constructor(map: BattleMapDefinition) {
@@ -132,18 +184,85 @@ export class BattleSimulation {
             targetCellKey: "",
             attacking: false,
         }));
-        this.structures = [{
-            id: "barricade-0",
-            kind: "barricade",
-            ...map.cellToWorld({ x: 10, y: 4 }),
-            radius: 54,
-            defense: 30,
-            vitality: new VitalityRuntime({ maxHealth: 600, zeroState: "disabled" }),
-        }];
+        this.structures = map.barriers.map((barrier) => ({
+            id: barrier.id,
+            kind: "breakable-barrier" as const,
+            name: barrier.name,
+            ...map.cellToWorld(barrier.cell),
+            radius: barrier.radius,
+            defense: barrier.defense,
+            vitality: new VitalityRuntime({ maxHealth: barrier.maxHealth, zeroState: "destroyed" }),
+        }));
+        this.loot = map.loot.map((item) => ({
+            ...item,
+            ...map.cellToWorld(item.cell),
+            discovered: item.initiallyDiscovered,
+            opened: false,
+        }));
+        this.explorationPoints = map.explorationPoints.map((point) => ({
+            ...point,
+            ...map.cellToWorld(point.cell),
+            completed: false,
+        }));
     }
 
     get activeEnemies(): EnemyAgent[] {
         return this.enemies.filter((enemy) => enemy.vitality.active);
+    }
+
+    get nearestInteraction(): BattleInteractionTarget | null {
+        if (!this.player.vitality.active) return null;
+        const candidates: BattleInteractionTarget[] = [];
+        for (const item of this.loot) {
+            if (!item.discovered || item.opened) continue;
+            const itemDistance = distance(this.player, item);
+            if (itemDistance <= this.interactionRange) {
+                candidates.push({ id: item.id, category: "loot", name: item.name, action: "open", distance: itemDistance });
+            }
+        }
+        for (const point of this.explorationPoints) {
+            if (point.completed) continue;
+            const pointDistance = distance(this.player, point);
+            if (pointDistance <= this.interactionRange) {
+                candidates.push({ id: point.id, category: "exploration", name: point.name, action: "investigate", distance: pointDistance });
+            }
+        }
+        candidates.sort((left, right) => left.distance - right.distance || left.id.localeCompare(right.id));
+        return candidates[0] ?? null;
+    }
+
+    interact(id: string): BattleInteractionResult {
+        if (!this.player.vitality.active) return this.rejectedInteraction(id, "当前无法交互");
+        const loot = this.loot.find((item) => item.id === id);
+        if (loot) {
+            if (!loot.discovered || loot.opened || distance(this.player, loot) > this.interactionRange) {
+                return this.rejectedInteraction(id, "目标不在交互范围内");
+            }
+            loot.opened = true;
+            this.grantRewards(loot.rewards);
+            const message = `已开启 ${loot.name} · ${this.rewardSummary(loot.rewards)}`;
+            this.pushNotice("loot", message);
+            return { accepted: true, targetId: id, message, rewards: loot.rewards, revealedIds: [] };
+        }
+
+        const point = this.explorationPoints.find((candidate) => candidate.id === id);
+        if (!point || point.completed || distance(this.player, point) > this.interactionRange) {
+            return this.rejectedInteraction(id, "目标不在交互范围内");
+        }
+        point.completed = true;
+        this.grantRewards(point.rewards);
+        const revealedIds = point.typeId === "radar-terminal" ? this.revealHiddenLoot() : [];
+        const effect = revealedIds.length > 0 ? `，已标记 ${revealedIds.length} 个隐藏补给` : "";
+        const message = `调查完成：${point.name}${effect}`;
+        this.pushNotice(revealedIds.length > 0 ? "reveal" : "exploration", message);
+        return { accepted: true, targetId: id, message, rewards: point.rewards, revealedIds };
+    }
+
+    findCombatTarget(id: string): CombatTarget | null {
+        if (this.player.id === id) return this.player;
+        return this.enemies.find((enemy) => enemy.id === id)
+            ?? this.structures.find((structure) => structure.id === id)
+            ?? null;
     }
 
     setMoveInput(x: number, y: number): void {
@@ -192,11 +311,6 @@ export class BattleSimulation {
         return true;
     }
 
-    repairStructure(id: string, amount: number): VitalityChangeResult | null {
-        const structure = this.structures.find((candidate) => candidate.id === id);
-        return structure ? structure.vitality.repair(amount) : null;
-    }
-
     update(deltaTime: number): void {
         this.hitEvents.length = 0;
         const dt = Math.max(0, Math.min(deltaTime, 0.1));
@@ -229,7 +343,7 @@ export class BattleSimulation {
             this.playerAutoAttacking = false;
             return;
         }
-        let target: EnemyAgent | null = null;
+        let target: CombatTarget | null = null;
         let targetDistance = Number.POSITIVE_INFINITY;
         for (const enemy of this.activeEnemies) {
             const enemyDistance = distance(enemy, this.player);
@@ -237,6 +351,15 @@ export class BattleSimulation {
             if (enemyDistance < targetDistance) {
                 target = enemy;
                 targetDistance = enemyDistance;
+            }
+        }
+        if (!target) {
+            for (const structure of this.structures) {
+                if (!structure.vitality.active) continue;
+                const structureDistance = distance(structure, this.player);
+                if (structureDistance > this.autoAttackRange || structureDistance >= targetDistance) continue;
+                target = structure;
+                targetDistance = structureDistance;
             }
         }
         this.playerTarget = target;
@@ -247,7 +370,7 @@ export class BattleSimulation {
         this.playerAttackCooldown = this.playerAttackInterval;
     }
 
-    private spawnPlayerProjectile(target: EnemyAgent): void {
+    private spawnPlayerProjectile(target: CombatTarget): void {
         const dx = target.x - this.player.x;
         const dy = target.y - this.player.y;
         const length = Math.hypot(dx, dy);
@@ -271,8 +394,8 @@ export class BattleSimulation {
         for (let index = this.projectiles.length - 1; index >= 0; index--) {
             const projectile = this.projectiles[index];
             projectile.remainingLifetime -= dt;
-            const target = this.enemies.find((enemy) => enemy.id === projectile.targetId && enemy.vitality.active);
-            if (!target || projectile.remainingLifetime <= 0) {
+            const target = this.findCombatTarget(projectile.targetId);
+            if (!target?.vitality.active || projectile.remainingLifetime <= 0) {
                 this.projectiles.splice(index, 1);
                 continue;
             }
@@ -383,8 +506,58 @@ export class BattleSimulation {
                 x: target.x,
                 y: target.y,
             });
+            if (result.becameZero) {
+                const structure = this.structures.find((candidate) => candidate.id === target.id);
+                if (structure) this.openBarrierRoute(structure);
+            }
         }
         return result;
+    }
+
+    private rejectedInteraction(id: string, message: string): BattleInteractionResult {
+        return { accepted: false, targetId: id, message, rewards: [], revealedIds: [] };
+    }
+
+    private grantRewards(rewards: readonly MapReward[]): void {
+        for (const reward of rewards) this.resources[reward.kind] += reward.amount;
+    }
+
+    private revealHiddenLoot(): string[] {
+        const revealedIds: string[] = [];
+        for (const item of this.loot) {
+            if (item.discovered || item.opened) continue;
+            item.discovered = true;
+            revealedIds.push(item.id);
+        }
+        return revealedIds;
+    }
+
+    private rewardSummary(rewards: readonly MapReward[]): string {
+        const labels: Record<ResourceKind, string> = {
+            scrap: "废料",
+            medical: "医疗物资",
+            ammo: "弹药",
+            parts: "零件",
+            intel: "情报",
+        };
+        return rewards.map((reward) => `${labels[reward.kind]} +${reward.amount}`).join("、");
+    }
+
+    private pushNotice(kind: BattleNoticeEvent["kind"], message: string): void {
+        this.noticeEvents.push({ id: `notice-${this.nextNoticeEventId++}`, kind, message });
+    }
+
+    private openBarrierRoute(structure: BattleStructure): void {
+        if (!this.map.setBarrierBlocking(structure.id, false)) return;
+        this.playerPath = [];
+        this.playerPathIndex = 0;
+        for (const enemy of this.enemies) {
+            enemy.path = [];
+            enemy.pathIndex = 0;
+            enemy.targetCellKey = "";
+            enemy.repathIn = 0;
+        }
+        this.pushNotice("barrier", `${structure.name}已摧毁 · 捷径已开放`);
     }
 
     private stopPlayerActions(): void {
