@@ -6,6 +6,7 @@ import { SafeFrame, UIBuilder } from "../common/ui/UIBuilder";
 import { uiNavigation } from "../common/ui/UIRuntime";
 import { UI_THEME } from "../common/ui/UITheme";
 import { RESEARCH_DEFINITIONS, researchById } from "./model/ResearchCatalog.ts";
+import { formatCountdown } from "./model/ResearchPresentation.ts";
 import type {
     ResearchBranch,
     ResearchDefinition,
@@ -40,13 +41,6 @@ const FAILURE_TEXT: Readonly<Record<StartResearchFailureReason, string>> = {
     points: "研究点不足",
     "queue-full": "研究队列已满",
 };
-
-export function formatCountdown(milliseconds: number): string {
-    const totalSeconds = Math.max(0, Math.ceil((Number.isFinite(milliseconds) ? milliseconds : 0) / 1000));
-    const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, "0");
-    const seconds = (totalSeconds % 60).toString().padStart(2, "0");
-    return `${minutes}:${seconds}`;
-}
 
 @ccclass("ResearchViewComp")
 export class ResearchViewComp extends GamePage {
