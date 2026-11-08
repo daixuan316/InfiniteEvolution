@@ -32,4 +32,10 @@ export enum GameEvent {
     HordeWaveChanged = "HordeWaveChanged",
     /** 夜间尸潮清剿完成 */
     NightCompleted = "NightCompleted",
+    /** 库存数量变化 */
+    InventoryChanged = "InventoryChanged",
+    /** 工坊制造队列变化 */
+    WorkshopQueueChanged = "WorkshopQueueChanged",
+    /** 制造任务完成并已入库 */
+    CraftCompleted = "CraftCompleted",
 }

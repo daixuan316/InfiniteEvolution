@@ -96,6 +96,18 @@ test("save failure rolls back material consumption and queue insertion", () => {
     assert.deepEqual(service.getTasks(), []);
 });
 
+test("adding gathered items persists and rolls back when saving fails", () => {
+    const repository = new MemoryWorkshopRepository();
+    const service = makeService(undefined, repository);
+
+    assert.equal(service.addItem("scrap", 5), true);
+    assert.equal(makeService(undefined, repository).inventory.count("scrap"), 125);
+
+    repository.failNextSave = true;
+    assert.equal(service.addItem("scrap", 5), false);
+    assert.equal(service.inventory.count("scrap"), 125);
+});
+
 test("system clock rollback never increases a task beyond its original duration", () => {
     const service = makeService();
     service.enqueue("assault_rifle", NOW);

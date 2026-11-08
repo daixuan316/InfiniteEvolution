@@ -129,6 +129,18 @@ export class WorkshopService {
         }
     }
 
+    addItem(itemId: string, amount: number): boolean {
+        const before = this.toSnapshot();
+        if (!this.inventory.add(itemId, amount)) return false;
+        try {
+            this.persist();
+            return true;
+        } catch {
+            this.restore(before);
+            return false;
+        }
+    }
+
     sync(now: number): SyncResult {
         const before = this.toSnapshot();
         const completedRecipeIds: string[] = [];
