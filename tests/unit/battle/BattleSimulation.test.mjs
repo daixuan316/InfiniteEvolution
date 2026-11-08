@@ -113,13 +113,15 @@ test("player moving state follows direct input and path following", () => {
 
 test("enemies stop at melee range and enter the attacking state instead of stacking on the player", () => {
     const map = createHospitalDistrictMap();
-    const simulation = new BattleSimulation(map);
-
-    advance(simulation, 90);
-
-    for (const enemy of simulation.enemies) {
-        const enemyDistance = Math.hypot(enemy.x - simulation.player.x, enemy.y - simulation.player.y);
+    for (let index = 0; index < map.enemySpawns.length; index++) {
+        const simulation = new BattleSimulation(map);
+        const enemy = simulation.enemies[index];
         const attackRange = enemy.radius + simulation.playerRadius + simulation.meleeAttackMargin;
+        enemy.x = simulation.player.x + attackRange - 1;
+        enemy.y = simulation.player.y;
+
+        simulation.update(1 / 60);
+        const enemyDistance = Math.hypot(enemy.x - simulation.player.x, enemy.y - simulation.player.y);
         assert.equal(enemy.attacking, true);
         assert.ok(enemyDistance <= attackRange + 1, `enemy ${enemy.id} at ${enemyDistance} should hold at range ${attackRange}`);
         assert.ok(enemyDistance > simulation.playerRadius + enemy.radius, `enemy ${enemy.id} must not overlap the player`);
@@ -135,10 +137,71 @@ test("auto-attack only locks a target while an enemy is inside weapon range", ()
     assert.equal(simulation.playerAutoAttacking, false);
     assert.equal(simulation.playerTarget, null);
 
-    advance(simulation, 90);
+    const enemy = simulation.enemies[0];
+    enemy.x = simulation.player.x + simulation.autoAttackRange - 20;
+    enemy.y = simulation.player.y;
+    simulation.update(1 / 60);
 
     assert.equal(simulation.playerAutoAttacking, true);
-    assert.ok(simulation.playerTarget !== null);
+    assert.equal(simulation.playerTarget?.id, enemy.id);
     const targetDistance = Math.hypot(simulation.playerTarget.x - simulation.player.x, simulation.playerTarget.y - simulation.player.y);
     assert.ok(targetDistance <= simulation.autoAttackRange);
+});
+
+test("player auto-fire damages and kills only active enemies", () => {
+    const simulation = new BattleSimulation(createHospitalDistrictMap());
+    const enemy = simulation.enemies[0];
+    enemy.x = simulation.player.x + 100;
+    enemy.y = simulation.player.y;
+
+    const before = enemy.vitality.currentHealth;
+    advance(simulation, 0.4);
+    assert.ok(enemy.vitality.currentHealth < before);
+
+    advance(simulation, 5);
+    assert.equal(enemy.vitality.state, "dead");
+    assert.equal(simulation.activeEnemies.includes(enemy), false);
+    assert.notEqual(simulation.playerTarget?.id, enemy.id);
+});
+
+test("monsters damage a nearby barricade on attack intervals and it can be repaired", () => {
+    const map = createHospitalDistrictMap();
+    const simulation = new BattleSimulation(map);
+    const enemy = simulation.enemies[0];
+    const barricade = simulation.structures[0];
+    enemy.x = barricade.x + enemy.radius + barricade.radius + simulation.meleeAttackMargin - 1;
+    enemy.y = barricade.y;
+
+    assert.equal(map.isWorldWalkable(barricade, barricade.radius), true);
+    const before = barricade.vitality.currentHealth;
+    advance(simulation, 0.2);
+    const afterFirstHit = barricade.vitality.currentHealth;
+    assert.ok(afterFirstHit < before);
+
+    advance(simulation, 0.2);
+    assert.equal(barricade.vitality.currentHealth, afterFirstHit);
+
+    barricade.vitality.applyDamage(9999);
+    assert.equal(barricade.vitality.state, "disabled");
+    const repaired = simulation.repairStructure(barricade.id, 80);
+    assert.ok(repaired);
+    assert.equal(repaired.accepted, true);
+    assert.equal(barricade.vitality.state, "active");
+    assert.equal(simulation.repairStructure("missing", 10), null);
+});
+
+test("downed player cannot move, dodge, or attack", () => {
+    const map = createHospitalDistrictMap();
+    const simulation = new BattleSimulation(map);
+    simulation.player.vitality.applyDamage(9999);
+    const before = { x: simulation.player.x, y: simulation.player.y };
+    simulation.setMoveInput(1, 0);
+    simulation.setSprinting(true);
+
+    assert.equal(simulation.tryDodge(), false);
+    assert.equal(simulation.setPlayerDestination({ x: before.x + 200, y: before.y }), false);
+    advance(simulation, 1);
+    assert.deepEqual({ x: simulation.player.x, y: simulation.player.y }, before);
+    assert.equal(simulation.playerAutoAttacking, false);
+    assert.equal(simulation.playerTarget, null);
 });
