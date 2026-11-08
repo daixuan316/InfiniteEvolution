@@ -35,6 +35,7 @@
 | 14 | [地图、人物与怪物素材库](14-world-character-monster-assets.md) | 区域地图、战场、地点缩略图、人物、怪物、BOSS 与头像素材 |
 | 15 | [地图宝箱与交互物素材库](15-map-interactable-assets.md) | 宝箱、资源、设施、机关、事件的 UI 标记与俯视世界物件 |
 | 16 | [庇护所等级 UI 与动态素材库](16-shelter-level-assets.md) | 五级方舟 UI、底盘、结构模块、防御/进化模块与交互状态覆盖层 |
+| 17 | [P0 UI 组件素材库](17-ui-p0-component-assets.md) | 通用组件、探索 HUD、移动触控教学与夜战 HUD 的 64 张运行时切片 |
 
 ## 已确认且不得随意漂移的决策
 

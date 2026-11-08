@@ -1,16 +1,23 @@
 import { Node } from "cc";
 
 import { oops } from "../../../../../extensions/oops-plugin-framework/assets/core/Oops";
+import { BattleHUDViewComp } from "../../battle/BattleHUDViewComp";
+import { HallViewComp } from "../../hall/HallViewComp";
+import { ConfirmDialogViewComp } from "../../ui/ConfirmDialogViewComp";
+import { FeaturePageViewComp } from "../../ui/FeaturePageViewComp";
+import { PauseOverlayViewComp } from "../../ui/PauseOverlayViewComp";
 import { UIID } from "../config/GameUIConfig";
 import type { RouteKey } from "./NavigationStack.ts";
 import { UIPageBootstrap } from "./UIPageBootstrap";
-import { PageParams, UIGateway, UINavigationService } from "./UINavigationService.ts";
+import { UINavigationService } from "./UINavigationService.ts";
+import type { PageParams, UIGateway } from "./UINavigationService.ts";
 
 class OopsUIGateway implements UIGateway {
     async open(route: RouteKey, params: PageParams): Promise<void> {
-        const node: Node = await oops.gui.open(route as UIID, { ...params, uiid: route });
+        const data = { ...params, uiid: route };
+        const node: Node = await oops.gui.open(route as UIID, { data });
         if (!node) throw new Error(`UI ${String(route)} returned no node`);
-        UIPageBootstrap.attach(route, node, params);
+        UIPageBootstrap.attach(route, node, data);
     }
 
     remove(route: RouteKey): void {
@@ -23,3 +30,14 @@ class OopsUIGateway implements UIGateway {
 }
 
 export const uiNavigation = new UINavigationService(new OopsUIGateway(), UIID.Hall);
+
+UIPageBootstrap.register(UIID.Hall, HallViewComp);
+UIPageBootstrap.register(UIID.Equipment, FeaturePageViewComp);
+UIPageBootstrap.register(UIID.Workshop, FeaturePageViewComp);
+UIPageBootstrap.register(UIID.ArkBuild, FeaturePageViewComp);
+UIPageBootstrap.register(UIID.Research, FeaturePageViewComp);
+UIPageBootstrap.register(UIID.Crew, FeaturePageViewComp);
+UIPageBootstrap.register(UIID.Intel, FeaturePageViewComp);
+UIPageBootstrap.register(UIID.BattleHUD, BattleHUDViewComp);
+UIPageBootstrap.register(UIID.PauseOverlay, PauseOverlayViewComp);
+UIPageBootstrap.register(UIID.ConfirmDialog, ConfirmDialogViewComp);

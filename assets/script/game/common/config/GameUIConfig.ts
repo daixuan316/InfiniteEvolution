@@ -42,6 +42,6 @@ export var UIConfigData: { [key: number]: UIConfig } = {
     [UIID.Crew]: { layer: LayerType.UI, prefab: "gui/crew/crew", bundle: "bundle", destroy: false },
     [UIID.Intel]: { layer: LayerType.UI, prefab: "gui/intel/intel", bundle: "bundle", destroy: false },
     [UIID.BattleHUD]: { layer: LayerType.UI, prefab: "gui/battle-hud/battle-hud", bundle: "bundle", destroy: true },
-    [UIID.PauseOverlay]: { layer: LayerType.PopUp, prefab: "gui/pause/pause", bundle: "bundle", destroy: true, mask: true },
-    [UIID.ConfirmDialog]: { layer: LayerType.Dialog, prefab: "gui/confirm/confirm", bundle: "bundle", destroy: true, mask: true },
+    [UIID.PauseOverlay]: { layer: LayerType.PopUp, prefab: "gui/pause/pause", bundle: "bundle", destroy: true },
+    [UIID.ConfirmDialog]: { layer: LayerType.Dialog, prefab: "gui/confirm/confirm", bundle: "bundle", destroy: true },
 }

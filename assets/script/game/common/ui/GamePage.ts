@@ -1,4 +1,4 @@
-import { Component, Node } from "cc";
+import { Component, isValid, Node } from "cc";
 
 import type { PageParams } from "./UINavigationService.ts";
 
@@ -13,7 +13,11 @@ export abstract class GamePage extends Component {
 
     protected bindTouch(node: Node, handler: () => void): void {
         node.on(Node.EventType.TOUCH_END, handler, this);
-        this.disposers.push(() => node.off(Node.EventType.TOUCH_END, handler, this));
+        this.disposers.push(() => {
+            if (isValid(node, true)) {
+                node.off(Node.EventType.TOUCH_END, handler, this);
+            }
+        });
     }
 
     protected clearBindings(): void {
