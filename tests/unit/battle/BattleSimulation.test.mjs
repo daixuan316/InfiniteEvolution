@@ -205,3 +205,65 @@ test("downed player cannot move, dodge, or attack", () => {
     assert.equal(simulation.playerAutoAttacking, false);
     assert.equal(simulation.playerTarget, null);
 });
+
+test("player shots create a projectile and do not damage before impact", () => {
+    const simulation = new BattleSimulation(createHospitalDistrictMap());
+    const enemy = simulation.enemies[0];
+    enemy.x = simulation.player.x + 280;
+    enemy.y = simulation.player.y;
+    const before = enemy.vitality.currentHealth;
+
+    simulation.update(1 / 60);
+
+    assert.equal(simulation.projectiles.length, 1);
+    assert.equal(enemy.vitality.currentHealth, before);
+    advance(simulation, 0.08);
+    assert.equal(enemy.vitality.currentHealth, before);
+});
+
+test("projectile damages once on arrival and is removed", () => {
+    const simulation = new BattleSimulation(createHospitalDistrictMap());
+    const enemy = simulation.enemies[0];
+    enemy.x = simulation.player.x + 280;
+    enemy.y = simulation.player.y;
+    const before = enemy.vitality.currentHealth;
+
+    simulation.update(1 / 60);
+    for (let index = 0; index < 30 && enemy.vitality.currentHealth === before; index++) {
+        simulation.update(1 / 60);
+    }
+
+    assert.ok(enemy.vitality.currentHealth < before);
+    assert.equal(simulation.projectiles.length, 0);
+    const afterImpact = enemy.vitality.currentHealth;
+    simulation.update(1 / 60);
+    assert.equal(enemy.vitality.currentHealth, afterImpact);
+});
+
+test("projectile disappears without damage when its target dies first", () => {
+    const simulation = new BattleSimulation(createHospitalDistrictMap());
+    const enemy = simulation.enemies[0];
+    enemy.x = simulation.player.x + 280;
+    enemy.y = simulation.player.y;
+    simulation.update(1 / 60);
+    assert.equal(simulation.projectiles.length, 1);
+
+    enemy.vitality.applyDamage(9999);
+    simulation.update(1 / 60);
+
+    assert.equal(simulation.projectiles.length, 0);
+});
+
+test("projectile expires after its maximum lifetime", () => {
+    const simulation = new BattleSimulation(createHospitalDistrictMap());
+    const enemy = simulation.enemies[0];
+    enemy.x = simulation.player.x + 280;
+    enemy.y = simulation.player.y;
+    simulation.update(1 / 60);
+    enemy.x += 5000;
+
+    advance(simulation, simulation.projectileLifetime + 0.1);
+
+    assert.equal(simulation.projectiles.length, 0);
+    assert.equal(enemy.vitality.currentHealth, enemy.vitality.maxHealth);
+});

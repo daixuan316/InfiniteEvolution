@@ -29,6 +29,16 @@ export interface EnemyAgent extends BattleActor {
     attacking: boolean;
 }
 
+export interface BattleProjectile extends WorldPoint {
+    readonly id: string;
+    readonly sourceId: string;
+    readonly targetId: string;
+    readonly speed: number;
+    readonly baseDamage: number;
+    readonly tags: readonly string[];
+    remainingLifetime: number;
+}
+
 const ENEMY_COMBAT = [
     { health: 90, defense: 5, damage: 18, interval: 1 },
     { health: 70, defense: 0, damage: 12, interval: 0.55 },
@@ -58,9 +68,12 @@ export class BattleSimulation {
     readonly structureAggroRange = 300;
     readonly playerAttackInterval = 0.35;
     readonly playerAttackDamage = 35;
+    readonly projectileSpeed = 1400;
+    readonly projectileLifetime = 1.2;
     readonly player: BattleActor;
     readonly enemies: EnemyAgent[];
     readonly structures: BattleStructure[];
+    readonly projectiles: BattleProjectile[] = [];
     playerPath: GridPoint[] = [];
     /** Animation-facing battle state, refreshed every update. */
     playerMoving = false;
@@ -74,6 +87,7 @@ export class BattleSimulation {
     private moveInput: WorldPoint = { x: 0, y: 0 };
     private dodgeCooldown = 0;
     private playerAttackCooldown = 0;
+    private nextProjectileId = 1;
     private readonly pathfinder: GridPathfinder;
 
     constructor(map: BattleMapDefinition) {
@@ -186,6 +200,7 @@ export class BattleSimulation {
             this.stopPlayerActions();
         }
         this.updateAutoAttack(dt);
+        this.updateProjectiles(dt);
         this.updateEnemies(dt);
         if (!this.player.vitality.active) this.stopPlayerActions();
     }
@@ -212,11 +227,56 @@ export class BattleSimulation {
         this.playerAutoAttacking = target !== null;
         if (!target || this.playerAttackCooldown > 0) return;
 
-        this.applyResolvedDamage(this.player, target, this.playerAttackDamage, ["physical", "ranged"]);
+        this.spawnPlayerProjectile(target);
         this.playerAttackCooldown = this.playerAttackInterval;
-        if (!target.vitality.active) {
-            this.playerTarget = null;
-            this.playerAutoAttacking = false;
+    }
+
+    private spawnPlayerProjectile(target: EnemyAgent): void {
+        const dx = target.x - this.player.x;
+        const dy = target.y - this.player.y;
+        const length = Math.hypot(dx, dy);
+        const direction = length > 0
+            ? { x: dx / length, y: dy / length }
+            : this.facing;
+        this.projectiles.push({
+            id: `projectile-${this.nextProjectileId++}`,
+            sourceId: this.player.id,
+            targetId: target.id,
+            x: this.player.x + direction.x * this.player.radius,
+            y: this.player.y + direction.y * this.player.radius,
+            speed: this.projectileSpeed,
+            baseDamage: this.playerAttackDamage,
+            tags: Object.freeze(["physical", "ranged"]),
+            remainingLifetime: this.projectileLifetime,
+        });
+    }
+
+    private updateProjectiles(dt: number): void {
+        for (let index = this.projectiles.length - 1; index >= 0; index--) {
+            const projectile = this.projectiles[index];
+            projectile.remainingLifetime -= dt;
+            const target = this.enemies.find((enemy) => enemy.id === projectile.targetId && enemy.vitality.active);
+            if (!target || projectile.remainingLifetime <= 0) {
+                this.projectiles.splice(index, 1);
+                continue;
+            }
+
+            const dx = target.x - projectile.x;
+            const dy = target.y - projectile.y;
+            const targetDistance = Math.hypot(dx, dy);
+            const travel = projectile.speed * dt;
+            if (targetDistance <= travel + target.radius) {
+                this.applyResolvedDamage(this.player, target, projectile.baseDamage, projectile.tags);
+                this.projectiles.splice(index, 1);
+                if (!target.vitality.active && this.playerTarget?.id === target.id) {
+                    this.playerTarget = null;
+                    this.playerAutoAttacking = false;
+                }
+                continue;
+            }
+
+            projectile.x += dx / targetDistance * travel;
+            projectile.y += dy / targetDistance * travel;
         }
     }
 
