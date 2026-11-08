@@ -29,7 +29,6 @@ function cloneState(state: ResearchSaveV1): ResearchSaveV1 {
 
 export class ResearchRuntime {
     private readonly byId: ReadonlyMap<string, ResearchDefinition>;
-    private readonly definitions: readonly ResearchDefinition[];
     private readonly storage: ResearchStorage;
     private readonly defaultPoints: number;
     private state: ResearchSaveV1 | null = null;
@@ -40,7 +39,6 @@ export class ResearchRuntime {
         defaultPoints = 8,
     ) {
         validateResearchCatalog(definitions);
-        this.definitions = definitions;
         this.storage = storage;
         this.defaultPoints = defaultPoints;
         this.byId = new Map(definitions.map((definition) => [definition.id, definition]));
@@ -95,7 +93,8 @@ export class ResearchRuntime {
             }
         }
 
-        if (newlyCompleted.length > 0 || effectiveNow !== state.lastObservedAtMs) {
+        const activeClockAdvanced = queue.length > 0 && effectiveNow !== state.lastObservedAtMs;
+        if (newlyCompleted.length > 0 || activeClockAdvanced) {
             this.publish({
                 version: SAVE_VERSION,
                 points: state.points,
