@@ -71,11 +71,18 @@ export interface BattleMapDefinition {
     readonly explorationPoints: readonly MapExplorationDefinition[];
     readonly obstacles: readonly MapObstacleDefinition[];
     readonly barriers: readonly MapBarrierDefinition[];
+    readonly infinite?: boolean;
+    readonly revision?: number;
+    readonly worldSeed?: number;
+    readonly activeChunks?: readonly InfiniteChunkDefinition[];
+    readonly preloadedChunks?: readonly InfiniteChunkDefinition[];
     isWalkable(cell: GridPoint): boolean;
     isWorldWalkable(point: WorldPoint, radius?: number): boolean;
     cellToWorld(cell: GridPoint): WorldPoint;
     worldToCell(point: WorldPoint): GridPoint;
     setBarrierBlocking(id: string, blocking: boolean): boolean;
+    refreshAround?(point: WorldPoint): boolean;
+    getChunkAt?(coordinate: ChunkCoordinate): InfiniteChunkDefinition;
 }
 
 const COLUMNS = 42;
@@ -253,3 +260,6 @@ export function createHospitalDistrictMap(): BattleMapDefinition {
         },
     };
 }
+import type { InfiniteChunkDefinition } from "../world/infinite/InfiniteChunkGenerator.ts";
+import type { ChunkCoordinate } from "../world/infinite/InfiniteWorldTypes.ts";
+

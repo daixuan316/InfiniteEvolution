@@ -3,6 +3,7 @@ import type { GridPoint } from "./BattleMapModel.ts";
 export interface WalkableGrid {
     readonly columns: number;
     readonly rows: number;
+    readonly infinite?: boolean;
     isWalkable(cell: GridPoint): boolean;
 }
 
@@ -37,6 +38,13 @@ export class GridPathfinder {
 
     findPath(start: GridPoint, goal: GridPoint): GridPoint[] {
         if (!this.grid.isWalkable(start) || !this.grid.isWalkable(goal)) return [];
+        const margin = 16;
+        const searchBounds = this.grid.infinite ? {
+            minX: Math.min(start.x, goal.x) - margin,
+            maxX: Math.max(start.x, goal.x) + margin,
+            minY: Math.min(start.y, goal.y) - margin,
+            maxY: Math.max(start.y, goal.y) + margin,
+        } : null;
         const startKey = key(start);
         const goalKey = key(goal);
         const open: SearchNode[] = [{ ...start, g: 0, f: octile(start, goal) }];
@@ -54,9 +62,11 @@ export class GridPathfinder {
             if (closed.has(currentKey)) continue;
             if (currentKey === goalKey) return this.reconstruct(cameFrom, current);
             closed.add(currentKey);
+            if (this.grid.infinite && closed.size >= 4_096) return [];
 
             for (const direction of DIRECTIONS) {
                 const next = { x: current.x + direction.x, y: current.y + direction.y };
+                if (searchBounds && (next.x < searchBounds.minX || next.x > searchBounds.maxX || next.y < searchBounds.minY || next.y > searchBounds.maxY)) continue;
                 if (!this.grid.isWalkable(next)) continue;
                 if (direction.x !== 0 && direction.y !== 0) {
                     if (!this.grid.isWalkable({ x: current.x + direction.x, y: current.y }) ||
@@ -76,6 +86,24 @@ export class GridPathfinder {
 
     findPathToNearest(start: GridPoint, requestedGoal: GridPoint): GridPoint[] {
         if (!this.grid.isWalkable(start)) return [];
+        if (this.grid.infinite) {
+            for (let radius = 0; radius <= 12; radius++) {
+                const candidates: GridPoint[] = [];
+                for (let y = requestedGoal.y - radius; y <= requestedGoal.y + radius; y++) {
+                    for (let x = requestedGoal.x - radius; x <= requestedGoal.x + radius; x++) {
+                        if (Math.max(Math.abs(x - requestedGoal.x), Math.abs(y - requestedGoal.y)) !== radius) continue;
+                        const cell = { x, y };
+                        if (this.grid.isWalkable(cell)) candidates.push(cell);
+                    }
+                }
+                candidates.sort((a, b) => octile(a, requestedGoal) - octile(b, requestedGoal));
+                for (const candidate of candidates) {
+                    const path = this.findPath(start, candidate);
+                    if (path.length > 0) return path;
+                }
+            }
+            return [];
+        }
         const candidates: GridPoint[] = [];
         for (let y = 0; y < this.grid.rows; y++) {
             for (let x = 0; x < this.grid.columns; x++) {

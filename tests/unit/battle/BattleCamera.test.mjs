@@ -18,3 +18,10 @@ test("camera stays centered when the map is smaller than the viewport", () => {
         { x: 0, y: 0 },
     );
 });
+
+test("camera follows an infinite map without clamping", () => {
+    assert.deepEqual(
+        cameraTargetFor({ x: -99_999, y: 82_000 }, { worldWidth: 0, worldHeight: 0, infinite: true }, { width: 1334, height: 750 }),
+        { x: -99_999, y: 82_000 },
+    );
+});

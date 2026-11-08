@@ -38,3 +38,26 @@ test("blocked destinations resolve to the nearest reachable cell", () => {
     assert.notDeepEqual(path.at(-1), { x: 4, y: 4 });
     assert.equal(map.isWalkable(path.at(-1)), true);
 });
+
+test("unbounded grids search signed coordinates within a finite work budget", () => {
+    const map = {
+        columns: 0,
+        rows: 0,
+        infinite: true,
+        isWalkable: ({ x, y }) => y === -2 && x >= -30 && x <= 30,
+    };
+    const path = new GridPathfinder(map).findPath({ x: -20, y: -2 }, { x: 20, y: -2 });
+    assert.deepEqual(path[0], { x: -20, y: -2 });
+    assert.deepEqual(path.at(-1), { x: 20, y: -2 });
+});
+
+test("unbounded nearest search does not scan a nonexistent global grid", () => {
+    const map = {
+        columns: 0,
+        rows: 0,
+        infinite: true,
+        isWalkable: ({ x, y }) => y === 0 && x >= -20 && x <= 20,
+    };
+    const path = new GridPathfinder(map).findPathToNearest({ x: -10, y: 0 }, { x: 4, y: 3 });
+    assert.deepEqual(path.at(-1), { x: 4, y: 0 });
+});
