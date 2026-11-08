@@ -169,6 +169,12 @@ export function createInfiniteExplorationMap(options: InfiniteExplorationMapOpti
         get obstacles() { return content.obstacles; },
         get barriers() { return content.barriers; },
         getChunkAt,
+        readObjectDelta(cell: GridPoint, objectId: string) {
+            return deltas.getObjectDelta(chunkKey(cellChunk(cell)), objectId);
+        },
+        writeObjectDelta(cell: GridPoint, objectId: string, delta) {
+            deltas.setObjectDelta(chunkKey(cellChunk(cell)), objectId, delta);
+        },
         refreshAround(point: WorldPoint): boolean {
             const diff = streaming.update(point);
             if (diff.load.length === 0 && diff.unload.length === 0 && diff.activate.length === 0 && diff.deactivate.length === 0) return false;

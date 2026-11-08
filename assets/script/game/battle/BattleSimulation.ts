@@ -10,7 +10,11 @@ import type {
 import { GridPathfinder } from "./GridPathfinder.ts";
 import { resolveDamage } from "../combat/DamageResolver.ts";
 import { VitalityRuntime, type VitalityChangeResult } from "../combat/Vitality.ts";
+import { DualWeaponRuntime, type ShotIntent, type WeaponRuntimeStatus } from "../equipment/model/WeaponRuntime.ts";
+import type { RandomSource } from "../equipment/model/EquipmentEconomyService.ts";
+import type { MemoryKind, RoleCombatSnapshot, StatusKind, WeaponCombatSnapshot } from "../equipment/model/EquipmentTypes.ts";
 import { createFirstNightHorde, type HordeDirector, type HordePhase } from "../monster/model/HordeDirector.ts";
+import type { ArkBattleSettlement, ArkBattleSnapshot } from "../shelter/model/ArkTypes.ts";
 import {
     DEFAULT_BATTLE_PLAYER_MODIFIERS,
     type BattlePlayerModifiers,
@@ -38,9 +42,28 @@ export interface BattleSimulationOptions {
     readonly arkCore?: {
         readonly position: WorldPoint;
         readonly maxHealth: number;
+        readonly initialHealth?: number;
         readonly defense: number;
         readonly radius: number;
     };
+    readonly arkSnapshot?: ArkBattleSnapshot;
+    readonly equipmentSnapshot?: RoleCombatSnapshot;
+    readonly random?: RandomSource;
+}
+
+export interface ArkBattleModule extends CombatTarget {
+    readonly instanceId: string;
+    readonly definitionId: string;
+    readonly name: string;
+    readonly poweredAtStart: boolean;
+    powered: boolean;
+    readonly attackDamage: number;
+    readonly attackInterval: number;
+    readonly attackRange: number;
+    readonly repairRate: number;
+    readonly abilityId: string | null;
+    attackCooldown: number;
+    overloadRemaining: number;
 }
 
 export interface BattleLoot extends WorldPoint, MapLootDefinition {
@@ -86,6 +109,7 @@ export interface EnemyAgent extends BattleActor {
     repathIn: number;
     targetCellKey: string;
     attacking: boolean;
+    stunnedFor: number;
 }
 
 export interface BattleProjectile extends WorldPoint {
@@ -95,7 +119,23 @@ export interface BattleProjectile extends WorldPoint {
     readonly speed: number;
     readonly baseDamage: number;
     readonly tags: readonly string[];
+    readonly shot?: ShotIntent;
     remainingLifetime: number;
+}
+
+export interface EquipmentMemoryDelta {
+    readonly instanceId: string;
+    readonly kind: MemoryKind;
+    readonly amount: number;
+}
+
+interface ActiveCombatStatus {
+    readonly targetId: string;
+    readonly sourceInstanceId: string;
+    readonly kind: StatusKind;
+    damage: number;
+    remaining: number;
+    tickIn: number;
 }
 
 export type CombatHitKind = "projectile" | "melee";
@@ -149,25 +189,61 @@ function normalizePlayerModifiers(modifiers: BattlePlayerModifiers | undefined):
     };
 }
 
+function defaultWeapon(instanceId: string): WeaponCombatSnapshot {
+    return {
+        instanceId,
+        templateId: "weapon_assault",
+        name: "制式步枪",
+        weaponClass: "assault",
+        damage: 35,
+        interval: 0.35,
+        range: 320,
+        magazine: 24,
+        reload: 1.7,
+        heatPerShot: 0,
+        heatCapacity: 100,
+        coolingPerSecond: 25,
+        projectileSpeed: 1400,
+        critChance: 0,
+        critMultiplier: 1.75,
+        weakpointMultiplier: 1.5,
+        additiveDamageBonus: 0,
+        mechanics: ["稳定连射"],
+    };
+}
+
+function defaultEquipmentSnapshot(): RoleCombatSnapshot {
+    return {
+        maxHealth: 420,
+        maxShield: 180,
+        defense: 20,
+        moveSpeed: 270,
+        dodgeCooldown: 0.85,
+        weapons: [defaultWeapon("default-primary"), defaultWeapon("default-backup")],
+        resonances: [],
+    };
+}
+
 export class BattleSimulation {
     readonly map: BattleMapDefinition;
     readonly playerRadius = 28;
     /** Movement speed multiplier while sprinting; also drives walk animation speed. */
     readonly sprintMultiplier = 1.55;
     /** Weapon reach for the player's auto-fire state, in world units. */
-    readonly autoAttackRange = 320;
+    autoAttackRange = 320;
     /** Extra clearance beyond body radii before a melee enemy starts attacking. */
     readonly meleeAttackMargin = 55;
     /** Nearby fortifications intercept monsters before they continue toward the player. */
     readonly structureAggroRange = 300;
-    readonly playerAttackInterval = 0.35;
-    readonly playerAttackDamage: number;
-    readonly projectileSpeed = 1400;
+    playerAttackInterval = 0.35;
+    playerAttackDamage: number;
+    projectileSpeed = 1400;
     readonly projectileLifetime = 1.2;
     readonly interactionRange = 145;
     readonly player: BattleActor;
     readonly enemies: EnemyAgent[];
     readonly structures: BattleStructure[];
+    readonly arkModules: ArkBattleModule[];
     readonly loot: BattleLoot[];
     readonly explorationPoints: BattleExplorationPoint[];
     readonly resources: Record<ResourceKind, number> = {
@@ -180,6 +256,7 @@ export class BattleSimulation {
     readonly projectiles: BattleProjectile[] = [];
     readonly hitEvents: CombatHitEvent[] = [];
     readonly noticeEvents: BattleNoticeEvent[] = [];
+    readonly weaponRuntime: DualWeaponRuntime;
     playerPath: GridPoint[] = [];
     /** Animation-facing battle state, refreshed every update. */
     playerMoving = false;
@@ -193,6 +270,7 @@ export class BattleSimulation {
     private moveInput: WorldPoint = { x: 0, y: 0 };
     private dodgeCooldown = 0;
     private playerAttackCooldown = 0;
+    private dodgeCooldownDuration = 0.85;
     private nextProjectileId = 1;
     private nextHitEventId = 1;
     private nextNoticeEventId = 1;
@@ -200,28 +278,50 @@ export class BattleSimulation {
     private nextHordeSpawnIndex = 0;
     private horde: HordeDirector | null = null;
     private readonly pathfinder: GridPathfinder;
+    private readonly spawnInitialEnemies: boolean;
+    private lastMapRevision: number;
+    private readonly battleRandom: RandomSource;
+    private readonly equipmentMemory = new Map<string, Map<MemoryKind, number>>();
+    private readonly combatStatuses: ActiveCombatStatus[] = [];
+    private emergencyEnergy = 0;
+    private emergencyEnergySpent = 0;
+    private readonly arkRewardMultiplier: number;
+    private readonly arkHordeMultiplier: number;
 
     constructor(map: BattleMapDefinition, options: BattleSimulationOptions = {}) {
         this.map = map;
         this.pathfinder = new GridPathfinder(map);
+        this.spawnInitialEnemies = options.spawnInitialEnemies !== false;
         const playerModifiers = normalizePlayerModifiers(options.playerModifiers);
-        this.playerAttackDamage = 35 * playerModifiers.attackDamageMultiplier;
+        const equipment = structuredClone(options.equipmentSnapshot ?? defaultEquipmentSnapshot());
+        equipment.weapons = equipment.weapons.map((weapon) => ({
+            ...weapon,
+            damage: weapon.damage * playerModifiers.attackDamageMultiplier,
+        })) as [WeaponCombatSnapshot, WeaponCombatSnapshot];
+        this.battleRandom = options.random ?? { next: () => Math.random() };
+        this.weaponRuntime = new DualWeaponRuntime(equipment.weapons, this.battleRandom);
+        this.playerAttackDamage = this.weaponRuntime.activeSnapshot.damage;
+        this.playerAttackInterval = this.weaponRuntime.activeSnapshot.interval;
+        this.autoAttackRange = this.weaponRuntime.activeSnapshot.range;
+        this.projectileSpeed = this.weaponRuntime.activeSnapshot.projectileSpeed;
+        this.dodgeCooldownDuration = equipment.dodgeCooldown;
         this.player = {
             id: "player",
             ...map.cellToWorld(map.start),
             radius: this.playerRadius,
-            speed: 270 * playerModifiers.moveSpeedMultiplier,
-            defense: 20,
+            speed: equipment.moveSpeed * playerModifiers.moveSpeedMultiplier,
+            defense: equipment.defense,
             vitality: new VitalityRuntime({
-                maxHealth: 420 + playerModifiers.maxHealthAdd,
-                maxShield: 180 + playerModifiers.maxShieldAdd,
+                maxHealth: equipment.maxHealth + playerModifiers.maxHealthAdd,
+                maxShield: equipment.maxShield + playerModifiers.maxShieldAdd,
                 zeroState: "downed",
             }),
         };
-        this.enemies = options.spawnInitialEnemies === false ? [] : map.enemySpawns.map((spawn, index) => this.createEnemy(
+        this.enemies = !this.spawnInitialEnemies ? [] : map.enemySpawns.map((spawn, index) => this.createEnemy(
             INITIAL_ENEMY_KINDS[index] ?? "walker",
             map.cellToWorld(spawn),
             index * 0.12,
+            map.infinite ? `chunk-enemy:${spawn.x}:${spawn.y}` : undefined,
         ));
         this.structures = map.barriers.map((barrier) => ({
             id: barrier.id,
@@ -240,24 +340,52 @@ export class BattleSimulation {
                 ...options.arkCore.position,
                 radius: options.arkCore.radius,
                 defense: options.arkCore.defense,
-                vitality: new VitalityRuntime({ maxHealth: options.arkCore.maxHealth, zeroState: "destroyed" }),
+                vitality: new VitalityRuntime({ maxHealth: options.arkCore.maxHealth, initialHealth: options.arkCore.initialHealth, zeroState: "destroyed" }),
             });
         }
-        this.loot = map.loot.map((item) => ({
-            ...item,
-            ...map.cellToWorld(item.cell),
-            discovered: item.initiallyDiscovered,
-            opened: false,
-        }));
-        this.explorationPoints = map.explorationPoints.map((point) => ({
-            ...point,
-            ...map.cellToWorld(point.cell),
-            completed: false,
-        }));
+        const arkOrigin = options.arkCore?.position ?? map.cellToWorld(map.extraction);
+        const offsets: Readonly<Record<string, WorldPoint>> = {
+            "front-left": { x: -150, y: -80 }, "front-right": { x: 150, y: -80 },
+            "top-left": { x: -130, y: 95 }, "top-right": { x: 130, y: 95 },
+            side: { x: 220, y: 0 }, internal: { x: 0, y: 30 }, bio: { x: -220, y: 0 },
+        };
+        this.arkModules = (options.arkSnapshot?.modules ?? []).map((entry) => {
+            const offset = offsets[entry.slotId] ?? { x: 0, y: 0 };
+            return {
+                id: entry.instanceId,
+                instanceId: entry.instanceId,
+                definitionId: entry.definitionId,
+                name: entry.name,
+                x: arkOrigin.x + offset.x,
+                y: arkOrigin.y + offset.y,
+                radius: entry.battle.radius ?? 38,
+                defense: entry.battle.defense ?? 0,
+                vitality: new VitalityRuntime({ maxHealth: entry.maxDurability, initialHealth: entry.durability, zeroState: "disabled" }),
+                poweredAtStart: entry.powered,
+                powered: entry.powered,
+                attackDamage: entry.battle.attackDamage ?? 0,
+                attackInterval: entry.battle.attackInterval ?? 1,
+                attackRange: entry.battle.attackRange ?? 0,
+                repairRate: entry.battle.repairRate ?? 0,
+                abilityId: entry.abilityId,
+                attackCooldown: 0,
+                overloadRemaining: 0,
+            };
+        });
+        this.emergencyEnergy = options.arkSnapshot?.emergencyEnergy ?? 0;
+        this.arkRewardMultiplier = options.arkSnapshot?.rewardMultiplier ?? 1;
+        this.arkHordeMultiplier = options.arkSnapshot?.hordeMultiplier ?? 1;
+        this.loot = map.loot.map((item) => this.createLoot(item));
+        this.explorationPoints = map.explorationPoints.map((point) => this.createExplorationPoint(point));
+        this.lastMapRevision = map.revision ?? 0;
     }
 
     get activeEnemies(): EnemyAgent[] {
         return this.enemies.filter((enemy) => enemy.vitality.active);
+    }
+
+    get worldRevision(): number {
+        return this.lastMapRevision;
     }
 
     get hordeStarted(): boolean {
@@ -280,9 +408,31 @@ export class BattleSimulation {
         return this.horde?.remainingThreats(this.activeEnemies.length) ?? 0;
     }
 
+    get weaponStatus(): WeaponRuntimeStatus {
+        return this.weaponRuntime.status;
+    }
+
+    switchWeapon(): WeaponRuntimeStatus {
+        const previous = this.weaponRuntime.status.instanceId;
+        const status = this.weaponRuntime.swap();
+        this.syncActiveWeaponFields();
+        this.addEquipmentMemory(previous, "swapChain", 1);
+        this.addEquipmentMemory(status.instanceId, "swapChain", 1);
+        return status;
+    }
+
+    drainEquipmentMemoryDeltas(): EquipmentMemoryDelta[] {
+        const result: EquipmentMemoryDelta[] = [];
+        for (const [instanceId, counters] of this.equipmentMemory) {
+            for (const [kind, amount] of counters) if (amount > 0) result.push({ instanceId, kind, amount });
+        }
+        this.equipmentMemory.clear();
+        return result;
+    }
+
     startHorde(seed = 1): boolean {
         if (this.horde) return false;
-        this.horde = createFirstNightHorde(seed);
+        this.horde = createFirstNightHorde(seed, this.arkHordeMultiplier);
         return true;
     }
 
@@ -315,6 +465,7 @@ export class BattleSimulation {
                 return this.rejectedInteraction(id, "目标不在交互范围内");
             }
             loot.opened = true;
+            this.map.writeObjectDelta?.(loot.cell, loot.id, { opened: true, discovered: loot.discovered });
             this.grantRewards(loot.rewards);
             const message = `已开启 ${loot.name} · ${this.rewardSummary(loot.rewards)}`;
             this.pushNotice("loot", message);
@@ -326,6 +477,7 @@ export class BattleSimulation {
             return this.rejectedInteraction(id, "目标不在交互范围内");
         }
         point.completed = true;
+        this.map.writeObjectDelta?.(point.cell, point.id, { eventStage: "complete" });
         this.grantRewards(point.rewards);
         const revealedIds = point.typeId === "radar-terminal" ? this.revealHiddenLoot() : [];
         const effect = revealedIds.length > 0 ? `，已标记 ${revealedIds.length} 个隐藏补给` : "";
@@ -338,6 +490,7 @@ export class BattleSimulation {
         if (this.player.id === id) return this.player;
         return this.enemies.find((enemy) => enemy.id === id)
             ?? this.structures.find((structure) => structure.id === id)
+            ?? this.arkModules.find((module) => module.id === id)
             ?? null;
     }
 
@@ -369,7 +522,7 @@ export class BattleSimulation {
         if (Math.hypot(this.player.x - before.x, this.player.y - before.y) < 1) return false;
         this.playerPath = [];
         this.playerPathIndex = 0;
-        this.dodgeCooldown = 0.85;
+        this.dodgeCooldown = this.dodgeCooldownDuration;
         this.playerDodgePlayback = 0.5;
         this.playerDodgeCount += 1;
         return true;
@@ -389,9 +542,12 @@ export class BattleSimulation {
 
     update(deltaTime: number): void {
         this.hitEvents.length = 0;
+        this.refreshWorldContent();
         const dt = Math.max(0, Math.min(deltaTime, 0.1));
         this.dodgeCooldown = Math.max(0, this.dodgeCooldown - dt);
         this.playerDodgePlayback = Math.max(0, this.playerDodgePlayback - dt);
+        this.weaponRuntime.update(dt);
+        this.updateCombatStatuses(dt);
         if (this.player.vitality.active) {
             const speedMultiplier = this.sprinting ? this.sprintMultiplier : 1;
             const directInput = Math.hypot(this.moveInput.x, this.moveInput.y) > 0.05;
@@ -407,6 +563,7 @@ export class BattleSimulation {
         }
         this.updateHorde(dt);
         this.updateAutoAttack(dt);
+        this.updateArkModules(dt);
         this.updateProjectiles(dt);
         this.updateEnemies(dt);
         if (!this.player.vitality.active) this.stopPlayerActions();
@@ -423,10 +580,71 @@ export class BattleSimulation {
         }
     }
 
-    private createEnemy(kind: EnemyKind, position: WorldPoint, repathIn: number): EnemyAgent {
+    refreshWorldContent(): boolean {
+        if (this.map.infinite) {
+            for (const enemy of this.enemies) {
+                if (!enemy.id.startsWith("chunk-enemy:") || enemy.vitality.active) continue;
+                this.map.writeObjectDelta?.(this.map.worldToCell(enemy), enemy.id, { destroyed: true });
+            }
+        }
+        const changed = this.map.refreshAround?.(this.player) ?? false;
+        const revision = this.map.revision ?? this.lastMapRevision;
+        if (!changed && revision === this.lastMapRevision) return false;
+
+        const existingLoot = new Map(this.loot.map((item) => [item.id, item]));
+        const nextLoot = this.map.loot.map((definition) => existingLoot.get(definition.id) ?? this.createLoot(definition));
+        this.loot.splice(0, this.loot.length, ...nextLoot);
+
+        const existingExploration = new Map(this.explorationPoints.map((point) => [point.id, point]));
+        const nextExploration = this.map.explorationPoints.map((definition) => existingExploration.get(definition.id) ?? this.createExplorationPoint(definition));
+        this.explorationPoints.splice(0, this.explorationPoints.length, ...nextExploration);
+
+        if (this.spawnInitialEnemies && this.map.infinite) {
+            const existingEnemies = new Map(this.enemies.map((enemy) => [enemy.id, enemy]));
+            const nextEnemies: EnemyAgent[] = [];
+            this.map.enemySpawns.forEach((spawn, index) => {
+                const id = `chunk-enemy:${spawn.x}:${spawn.y}`;
+                if (this.map.readObjectDelta?.(spawn, id)?.destroyed) return;
+                const existing = existingEnemies.get(id);
+                if (existing) {
+                    nextEnemies.push(existing);
+                    return;
+                }
+                const kindIndex = Math.abs(Math.imul(spawn.x, 31) + Math.imul(spawn.y, 17)) % INITIAL_ENEMY_KINDS.length;
+                nextEnemies.push(this.createEnemy(INITIAL_ENEMY_KINDS[kindIndex], this.map.cellToWorld(spawn), index * 0.04, id));
+            });
+            this.enemies.splice(0, this.enemies.length, ...nextEnemies);
+        }
+
+        this.playerPath = [];
+        this.playerPathIndex = 0;
+        this.lastMapRevision = revision;
+        return true;
+    }
+
+    private createLoot(item: MapLootDefinition): BattleLoot {
+        const delta = this.map.readObjectDelta?.(item.cell, item.id);
+        return {
+            ...item,
+            ...this.map.cellToWorld(item.cell),
+            discovered: delta?.discovered ?? item.initiallyDiscovered,
+            opened: delta?.opened ?? false,
+        };
+    }
+
+    private createExplorationPoint(point: MapExplorationDefinition): BattleExplorationPoint {
+        const delta = this.map.readObjectDelta?.(point.cell, point.id);
+        return {
+            ...point,
+            ...this.map.cellToWorld(point.cell),
+            completed: delta?.eventStage === "complete",
+        };
+    }
+
+    private createEnemy(kind: EnemyKind, position: WorldPoint, repathIn: number, stableId?: string): EnemyAgent {
         const combat = ENEMY_COMBAT[kind];
         return {
-            id: `enemy-${this.nextEnemyId++}`,
+            id: stableId ?? `enemy-${this.nextEnemyId++}`,
             kind,
             ...position,
             radius: combat.radius,
@@ -441,12 +659,12 @@ export class BattleSimulation {
             repathIn,
             targetCellKey: "",
             attacking: false,
+            stunnedFor: 0,
         };
     }
 
     /** Locks and damages the nearest active enemy inside weapon range. */
     private updateAutoAttack(dt: number): void {
-        this.playerAttackCooldown = Math.max(0, this.playerAttackCooldown - dt);
         if (!this.player.vitality.active) {
             this.playerTarget = null;
             this.playerAutoAttacking = false;
@@ -474,30 +692,38 @@ export class BattleSimulation {
         }
         this.playerTarget = target;
         this.playerAutoAttacking = target !== null;
-        if (!target || this.playerAttackCooldown > 0) return;
-
-        this.spawnPlayerProjectile(target);
-        this.playerAttackCooldown = this.playerAttackInterval;
+        if (!target) return;
+        const shot = this.weaponRuntime.tryFire({
+            distance: targetDistance,
+            moving: this.playerMoving,
+            nearArk: this.hordeStarted,
+        });
+        if (!shot.ok) return;
+        this.spawnPlayerProjectile(target, shot.value);
+        if (targetDistance <= 160) this.addEquipmentMemory(shot.value.instanceId, "closeHit", shot.value.projectileCount);
     }
 
-    private spawnPlayerProjectile(target: CombatTarget): void {
+    private spawnPlayerProjectile(target: CombatTarget, shot: ShotIntent): void {
         const dx = target.x - this.player.x;
         const dy = target.y - this.player.y;
         const length = Math.hypot(dx, dy);
         const direction = length > 0
             ? { x: dx / length, y: dy / length }
             : this.facing;
-        this.projectiles.push({
-            id: `projectile-${this.nextProjectileId++}`,
-            sourceId: this.player.id,
-            targetId: target.id,
-            x: this.player.x + direction.x * this.player.radius,
-            y: this.player.y + direction.y * this.player.radius,
-            speed: this.projectileSpeed,
-            baseDamage: this.playerAttackDamage,
-            tags: Object.freeze(["physical", "ranged"]),
-            remainingLifetime: this.projectileLifetime,
-        });
+        for (let index = 0; index < shot.projectileCount; index++) {
+            this.projectiles.push({
+                id: `projectile-${this.nextProjectileId++}`,
+                sourceId: this.player.id,
+                targetId: target.id,
+                x: this.player.x + direction.x * this.player.radius,
+                y: this.player.y + direction.y * this.player.radius,
+                speed: this.projectileSpeed,
+                baseDamage: shot.damage * (1 + shot.suppression * 0.02),
+                tags: Object.freeze(["ranged", shot.weaponClass, ...(shot.status ? [shot.status] : [])]),
+                shot,
+                remainingLifetime: this.projectileLifetime,
+            });
+        }
     }
 
     private updateProjectiles(dt: number): void {
@@ -515,7 +741,7 @@ export class BattleSimulation {
             const targetDistance = Math.hypot(dx, dy);
             const travel = projectile.speed * dt;
             if (targetDistance <= travel + target.radius) {
-                this.applyResolvedDamage(this.player, target, projectile.baseDamage, projectile.tags, "projectile");
+                this.resolvePlayerProjectile(projectile, target);
                 this.projectiles.splice(index, 1);
                 if (!target.vitality.active && this.playerTarget?.id === target.id) {
                     this.playerTarget = null;
@@ -529,12 +755,126 @@ export class BattleSimulation {
         }
     }
 
+    private resolvePlayerProjectile(projectile: BattleProjectile, target: CombatTarget): void {
+        const result = this.applyResolvedDamage(this.player, target, projectile.baseDamage, projectile.tags, "projectile");
+        const shot = projectile.shot;
+        if (!shot) return;
+        if (shot.weakpoint) this.addEquipmentMemory(shot.instanceId, "weakpointHit", 1);
+        this.applyShotStatus(shot, target);
+        const secondary = this.activeEnemies
+            .filter((enemy) => enemy.id !== target.id && enemy.vitality.active)
+            .sort((left, right) => distance(left, target) - distance(right, target));
+        if (shot.splashRadius > 0) {
+            for (const enemy of secondary.filter((candidate) => distance(candidate, target) <= shot.splashRadius)) {
+                this.applyResolvedDamage(this.player, enemy, projectile.baseDamage * 0.72, [...projectile.tags, "splash"], "projectile");
+                this.applyShotStatus(shot, enemy);
+            }
+        }
+        if (shot.chainTargets > 0) {
+            secondary.slice(0, shot.chainTargets).forEach((enemy, index) => {
+                this.applyResolvedDamage(this.player, enemy, projectile.baseDamage * Math.pow(0.78, index + 1), [...projectile.tags, "chain"], "projectile");
+                this.applyShotStatus(shot, enemy);
+            });
+        }
+        if (shot.penetration > 0) {
+            secondary.filter((enemy) => distance(enemy, target) <= 110).slice(0, shot.penetration).forEach((enemy, index) => {
+                this.applyResolvedDamage(this.player, enemy, projectile.baseDamage * Math.pow(0.85, index + 1), [...projectile.tags, "penetration"], "projectile");
+            });
+        }
+        if (result.becameZero && this.hordeStarted) this.addEquipmentMemory(shot.instanceId, "arkDefenseKill", 1);
+    }
+
+    private applyShotStatus(shot: ShotIntent, target: CombatTarget): void {
+        if (!shot.status || this.normalizedBattleRandom() >= shot.statusChance) return;
+        this.addEquipmentMemory(shot.instanceId, "statusProc", 1);
+        const enemy = this.enemies.find((candidate) => candidate.id === target.id);
+        if (shot.status === "shock" && enemy) enemy.stunnedFor = Math.max(enemy.stunnedFor, 0.35);
+        const duration = shot.status === "burn" ? 3 : shot.status === "infection" ? 4 : shot.status === "corrode" ? 4 : 1;
+        const damage = shot.status === "burn" ? shot.damage * 0.2 : shot.status === "infection" ? shot.damage * 0.15 : 0;
+        const existing = this.combatStatuses.find((status) => status.targetId === target.id && status.kind === shot.status);
+        if (existing) {
+            existing.remaining = Math.max(existing.remaining, duration);
+            existing.damage = Math.max(existing.damage, damage);
+            return;
+        }
+        this.combatStatuses.push({ targetId: target.id, sourceInstanceId: shot.instanceId, kind: shot.status, damage, remaining: duration, tickIn: 1 });
+    }
+
+    private updateCombatStatuses(dt: number): void {
+        for (let index = this.combatStatuses.length - 1; index >= 0; index--) {
+            const status = this.combatStatuses[index];
+            status.remaining -= dt;
+            status.tickIn -= dt;
+            const target = this.findCombatTarget(status.targetId);
+            if (!target?.vitality.active || status.remaining <= 0) {
+                this.combatStatuses.splice(index, 1);
+                continue;
+            }
+            if (status.damage > 0 && status.tickIn <= 0) {
+                this.applyResolvedDamage(this.player, target, status.damage, [status.kind, "damage-over-time"], "projectile");
+                status.tickIn += 1;
+            }
+        }
+    }
+
+    private syncActiveWeaponFields(): void {
+        const weapon = this.weaponRuntime.activeSnapshot;
+        this.playerAttackDamage = weapon.damage;
+        this.playerAttackInterval = weapon.interval;
+        this.autoAttackRange = weapon.range;
+        this.projectileSpeed = weapon.projectileSpeed;
+    }
+
+    private addEquipmentMemory(instanceId: string, kind: MemoryKind, amount: number): void {
+        if (!Number.isFinite(amount) || amount <= 0) return;
+        let counters = this.equipmentMemory.get(instanceId);
+        if (!counters) {
+            counters = new Map<MemoryKind, number>();
+            this.equipmentMemory.set(instanceId, counters);
+        }
+        counters.set(kind, (counters.get(kind) ?? 0) + amount);
+    }
+
+    private normalizedBattleRandom(): number {
+        const value = this.battleRandom.next();
+        return Number.isFinite(value) ? Math.max(0, Math.min(0.999999, value)) : 0;
+    }
+
+    private updateArkModules(dt: number): void {
+        for (const module of this.arkModules) {
+            module.attackCooldown = Math.max(0, module.attackCooldown - dt);
+            module.overloadRemaining = Math.max(0, module.overloadRemaining - dt);
+            if (!module.powered || !module.vitality.active || module.attackDamage <= 0 || module.attackRange <= 0 || module.attackCooldown > 0) continue;
+            let target: EnemyAgent | null = null;
+            let targetDistance = Number.POSITIVE_INFINITY;
+            for (const enemy of this.activeEnemies) {
+                const candidate = distance(module, enemy);
+                const preferred = module.abilityId === "target_low_health"
+                    ? !target || enemy.vitality.healthRatio < target.vitality.healthRatio || (enemy.vitality.healthRatio === target.vitality.healthRatio && candidate < targetDistance)
+                    : candidate < targetDistance;
+                if (candidate <= module.attackRange && preferred) {
+                    target = enemy;
+                    targetDistance = candidate;
+                }
+            }
+            if (!target) continue;
+            const overloaded = module.overloadRemaining > 0;
+            this.applyResolvedDamage(module, target, module.attackDamage * (overloaded ? 1.5 : 1), ["physical", "ark-module"], "projectile");
+            module.attackCooldown = module.attackInterval * (overloaded ? 0.7 : 1);
+        }
+    }
+
     private updateEnemies(dt: number): void {
         for (const enemy of this.enemies) {
             if (!enemy.vitality.active) {
                 enemy.attacking = false;
                 enemy.path = [];
                 enemy.pathIndex = 0;
+                continue;
+            }
+            enemy.stunnedFor = Math.max(0, enemy.stunnedFor - dt);
+            if (enemy.stunnedFor > 0) {
+                enemy.attacking = false;
                 continue;
             }
             enemy.attackCooldown = Math.max(0, enemy.attackCooldown - dt);
@@ -577,6 +917,14 @@ export class BattleSimulation {
                 targetDistance = playerDistance;
             }
         }
+        for (const module of this.arkModules) {
+            if (!module.vitality.active) continue;
+            const candidateDistance = distance(enemy, module);
+            if (candidateDistance <= this.structureAggroRange && candidateDistance < targetDistance) {
+                target = module;
+                targetDistance = candidateDistance;
+            }
+        }
         for (const structure of this.structures) {
             if (structure.kind === "ark-core") continue;
             if (!structure.vitality.active) continue;
@@ -587,6 +935,49 @@ export class BattleSimulation {
             }
         }
         return target;
+    }
+
+    tryEmergencyPower(instanceId: string): boolean {
+        const module = this.arkModules.find((item) => item.instanceId === instanceId);
+        if (!module || module.powered || !module.vitality.active || this.emergencyEnergy < 1) return false;
+        module.powered = true;
+        this.emergencyEnergy -= 1;
+        this.emergencyEnergySpent += 1;
+        return true;
+    }
+
+    tryRemoteRepair(instanceId: string): boolean {
+        const module = this.arkModules.find((item) => item.instanceId === instanceId);
+        if (!module || module.vitality.currentHealth >= module.vitality.maxHealth || this.emergencyEnergy < 1) return false;
+        const amount = Math.max(20, this.arkModules.reduce((sum, item) => sum + item.repairRate, 0));
+        const result = module.vitality.repair(amount);
+        if (!result.accepted) return false;
+        this.emergencyEnergy -= 1;
+        this.emergencyEnergySpent += 1;
+        return true;
+    }
+
+    tryOverload(instanceId: string): boolean {
+        const module = this.arkModules.find((item) => item.instanceId === instanceId);
+        if (!module || !module.powered || !module.vitality.active || module.attackDamage <= 0 || module.overloadRemaining > 0 || this.emergencyEnergy < 1) return false;
+        module.overloadRemaining = 10;
+        this.emergencyEnergy -= 1;
+        this.emergencyEnergySpent += 1;
+        return true;
+    }
+
+    createArkSettlement(battleId: string): ArkBattleSettlement {
+        const core = this.structures.find((item) => item.kind === "ark-core");
+        return {
+            battleId,
+            moduleDurability: this.arkModules.map((module) => ({ instanceId: module.instanceId, durability: module.vitality.currentHealth })),
+            resourceDeltas: {
+                scrap: Math.floor(this.resources.scrap * this.arkRewardMultiplier),
+                parts: Math.floor(this.resources.parts * this.arkRewardMultiplier),
+                energyCell: this.emergencyEnergySpent === 0 ? 0 : -this.emergencyEnergySpent,
+            },
+            coreDurability: core?.vitality.currentHealth ?? 0,
+        };
     }
 
     private updateEnemyAttack(enemy: EnemyAgent, target: CombatTarget): void {
@@ -606,7 +997,9 @@ export class BattleSimulation {
             sourceId: source.id,
             targetId: target.id,
             baseDamage,
-            defense: target.defense,
+            defense: this.combatStatuses.some((status) => status.targetId === target.id && status.kind === "corrode")
+                ? target.defense * 0.7
+                : target.defense,
             tags,
         });
         const result = target.vitality.applyDamage(resolution.accepted ? resolution.amount : Number.NaN);
@@ -645,6 +1038,7 @@ export class BattleSimulation {
         for (const item of this.loot) {
             if (item.discovered || item.opened) continue;
             item.discovered = true;
+            this.map.writeObjectDelta?.(item.cell, item.id, { discovered: true });
             revealedIds.push(item.id);
         }
         return revealedIds;
@@ -667,6 +1061,7 @@ export class BattleSimulation {
 
     private openBarrierRoute(structure: BattleStructure): void {
         if (!this.map.setBarrierBlocking(structure.id, false)) return;
+        this.map.writeObjectDelta?.(this.map.worldToCell(structure), structure.id, { destroyed: true });
         this.playerPath = [];
         this.playerPathIndex = 0;
         for (const enemy of this.enemies) {

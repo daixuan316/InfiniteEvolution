@@ -1,5 +1,6 @@
 import type { InfiniteChunkDefinition } from "../world/infinite/InfiniteChunkGenerator.ts";
 import type { ChunkCoordinate } from "../world/infinite/InfiniteWorldTypes.ts";
+import type { WorldObjectDelta } from "../world/infinite/WorldDeltaStore.ts";
 
 export interface GridPoint {
     x: number;
@@ -86,6 +87,8 @@ export interface BattleMapDefinition {
     setBarrierBlocking(id: string, blocking: boolean): boolean;
     refreshAround?(point: WorldPoint): boolean;
     getChunkAt?(coordinate: ChunkCoordinate): InfiniteChunkDefinition;
+    readObjectDelta?(cell: GridPoint, objectId: string): WorldObjectDelta | undefined;
+    writeObjectDelta?(cell: GridPoint, objectId: string, delta: WorldObjectDelta): void;
 }
 
 const COLUMNS = 42;
