@@ -133,23 +133,37 @@ export class UIBuilder {
     }
 
     static progressBar(parent: Node, name: string, size: Size, position: Vec3, ratio: number, fillColor: Color): Node {
-        const clamped = Math.max(0, Math.min(1, ratio));
         const track = this.panel(parent, name, size, position, UI_THEME.colors.black, UI_THEME.colors.cyanDark);
-        const inset = 7;
-        const fillWidth = (size.width - inset * 2) * clamped;
-        if (fillWidth > 0) {
-            const fill = new Node(`${name}Fill`);
-            fill.layer = track.layer;
-            const transform = fill.addComponent(UITransform);
-            transform.setContentSize(fillWidth, size.height - inset * 2);
-            const graphics = fill.addComponent(Graphics);
-            graphics.fillColor = fillColor;
-            graphics.roundRect(-fillWidth / 2, -(size.height - inset * 2) / 2, fillWidth, size.height - inset * 2, 4);
-            graphics.fill();
-            fill.setPosition(-(size.width - inset * 2 - fillWidth) / 2, 0);
-            track.addChild(fill);
-        }
+        const fill = new Node(`${name}Fill`);
+        fill.layer = track.layer;
+        fill.addComponent(UITransform);
+        const graphics = fill.addComponent(Graphics);
+        graphics.fillColor = fillColor;
+        track.addChild(fill);
+        this.setProgressBarRatio(track, ratio);
         return track;
+    }
+
+    static setProgressBarRatio(track: Node, ratio: number): void {
+        const clamped = Number.isFinite(ratio) ? Math.max(0, Math.min(1, ratio)) : 0;
+        const trackSize = track.getComponent(UITransform)?.contentSize;
+        const fill = track.getChildByName(`${track.name}Fill`);
+        const fillTransform = fill?.getComponent(UITransform);
+        const graphics = fill?.getComponent(Graphics);
+        if (!trackSize || !fill || !fillTransform || !graphics) return;
+
+        const inset = 7;
+        const height = Math.max(0, trackSize.height - inset * 2);
+        const availableWidth = Math.max(0, trackSize.width - inset * 2);
+        const width = availableWidth * clamped;
+        fillTransform.setContentSize(width, height);
+        fill.setPosition(-(availableWidth - width) / 2, 0);
+        fill.active = width > 0;
+        graphics.clear();
+        if (width > 0) {
+            graphics.roundRect(-width / 2, -height / 2, width, height, 4);
+            graphics.fill();
+        }
     }
 
     static async icon(parent: Node, assetPath: string, size: number, position: Vec3 = Vec3.ZERO): Promise<Sprite | null> {

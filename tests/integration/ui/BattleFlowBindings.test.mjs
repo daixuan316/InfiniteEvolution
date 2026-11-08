@@ -31,3 +31,24 @@ test("runtime registers Battle HUD and both overlay controllers", () => {
     assert.match(source, /UIPageBootstrap\.register\(UIID\.PauseOverlay, PauseOverlayViewComp\)/);
     assert.match(source, /UIPageBootstrap\.register\(UIID\.ConfirmDialog, ConfirmDialogViewComp\)/);
 });
+
+test("Battle HUD binds player, enemy, and structure vitality", () => {
+    const source = readFileSync("assets/script/game/battle/BattleHUDViewComp.ts", "utf8");
+
+    assert.match(source, /simulation\.player\.vitality/);
+    assert.match(source, /enemy\.vitality\.healthRatio/);
+    assert.match(source, /simulation\.structures/);
+    assert.match(source, /UIBuilder\.setProgressBarRatio/);
+    assert.doesNotMatch(source, /\["Walker", "gui\/battle-hud\/actors\/walker", 112, 0\.38\]/);
+});
+
+test("dynamic maps exclude dead monsters", () => {
+    const source = readFileSync("assets/script/game/battle/BattleHUDViewComp.ts", "utf8");
+    assert.match(source, /simulation\.activeEnemies/);
+});
+
+test("UI builder exposes reusable progress updates", () => {
+    const source = readFileSync("assets/script/game/common/ui/UIBuilder.ts", "utf8");
+    assert.match(source, /static setProgressBarRatio\(track: Node, ratio: number\)/);
+    assert.match(source, /getChildByName\(`\$\{track\.name\}Fill`\)/);
+});

@@ -10,6 +10,7 @@ import {
     Label,
     Node,
     Size,
+    UIOpacity,
     UITransform,
     Vec3,
     input,
@@ -64,8 +65,17 @@ export class BattleHUDViewComp extends GamePage {
     private worldTouchLayer!: Node;
     private playerNode!: Node;
     private playerAnimator: ActorAnimator | null = null;
+    private playerHealthText!: Label;
+    private playerShieldText!: Label;
+    private playerHealthBar!: Node;
+    private playerShieldBar!: Node;
+    private downedLabel!: Label;
     private enemyNodes: Node[] = [];
     private enemyAnimators: ActorAnimator[] = [];
+    private enemyHealthBars: Node[] = [];
+    private structureNode!: Node;
+    private structureHealthBar!: Node;
+    private structureStatusLabel!: Label;
     private lastDodgeCount = 0;
     private pathGraphics!: Graphics;
     private minimapDynamic!: Graphics;
@@ -94,6 +104,7 @@ export class BattleHUDViewComp extends GamePage {
         if (this.paused || this.fullMapPanel?.active) return;
         this.simulation.update(deltaTime);
         this.syncActors();
+        this.syncVitality();
         this.updateCamera(deltaTime);
         this.syncPath();
         this.drawDynamicMap(this.minimapDynamic, 142, 82, true);
@@ -120,6 +131,7 @@ export class BattleHUDViewComp extends GamePage {
         this.renderObjective(this.frame);
         this.renderFullMap(this.frame);
         this.syncActors();
+        this.syncVitality();
         this.updateCamera(1);
         this.drawDynamicMap(this.minimapDynamic, 142, 82, true);
     }
@@ -164,19 +176,63 @@ export class BattleHUDViewComp extends GamePage {
         this.playerNode = this.createActor("Player", BattleHUDViewComp.PLAYER_ASSET, 158);
         this.playerAnimator = this.playerNode.getComponent(ActorAnimator);
         const assets = [
-            ["Walker", "gui/battle-hud/actors/walker", 112, 0.38],
-            ["Runner", "gui/battle-hud/actors/runner", 118, 0.74],
-            ["Mutant", "gui/battle-hud/actors/walker", 126, 0.55],
-            ["Brute", "gui/battle-hud/actors/brute", 172, 0.82],
+            ["Walker", "gui/battle-hud/actors/walker", 112],
+            ["Runner", "gui/battle-hud/actors/runner", 118],
+            ["Mutant", "gui/battle-hud/actors/walker", 126],
+            ["Brute", "gui/battle-hud/actors/brute", 172],
         ] as const;
         this.enemyAnimators = [];
-        this.enemyNodes = assets.map(([name, asset, size, health], index) => {
+        this.enemyHealthBars = [];
+        this.enemyNodes = assets.map(([name, asset, size], index) => {
             const actor = this.createActor(name, asset, size);
             const animator = actor.getComponent(ActorAnimator);
             if (animator) this.enemyAnimators.push(animator);
-            UIBuilder.progressBar(actor, `${name}Health`, new Size(index === 3 ? 156 : 104, 18), new Vec3(0, size * 0.47), health, index === 3 ? UI_THEME.colors.magenta : UI_THEME.colors.danger);
+            this.enemyHealthBars[index] = UIBuilder.progressBar(
+                actor,
+                `${name}Health`,
+                new Size(index === 3 ? 156 : 104, 18),
+                new Vec3(0, size * 0.47),
+                this.simulation.enemies[index].vitality.healthRatio,
+                index === 3 ? UI_THEME.colors.magenta : UI_THEME.colors.danger,
+            );
             return actor;
         });
+        this.renderBattleStructure();
+    }
+
+    private renderBattleStructure(): void {
+        const structure = this.simulation.structures[0];
+        this.structureNode = this.createNode(this.worldLayer, "Barricade", new Size(154, 116), new Vec3(structure.x, structure.y));
+        this.structureNode.addComponent(UIOpacity);
+        const graphics = this.structureNode.addComponent(Graphics);
+        graphics.fillColor = new Color(38, 49, 55, 245);
+        graphics.roundRect(-68, -25, 136, 50, 8);
+        graphics.fill();
+        graphics.lineWidth = 5;
+        graphics.strokeColor = UI_THEME.colors.orange;
+        graphics.moveTo(-58, -18);
+        graphics.lineTo(-32, 18);
+        graphics.lineTo(-6, -18);
+        graphics.lineTo(20, 18);
+        graphics.lineTo(48, -18);
+        graphics.stroke();
+        this.structureHealthBar = UIBuilder.progressBar(
+            this.structureNode,
+            "BarricadeHealth",
+            new Size(144, 18),
+            new Vec3(0, 48),
+            structure.vitality.healthRatio,
+            UI_THEME.colors.orange,
+        );
+        this.structureStatusLabel = UIBuilder.label(
+            this.structureNode,
+            "BarricadeStatus",
+            "路障",
+            new Size(180, 28),
+            new Vec3(0, -48),
+            16,
+            UI_THEME.colors.white,
+        );
     }
 
     private createActor(name: string, asset: string, size: number): Node {
@@ -199,11 +255,13 @@ export class BattleHUDViewComp extends GamePage {
     private renderPlayerStatus(frame: SafeFrame): void {
         const status = UIBuilder.hudPlate(this.node, "PlayerStatus", "exploration-hud/01-player-health-frame", new Size(390, 176), new Vec3(frame.left + 195, frame.top - 88));
         void UIBuilder.icon(status, "hud-combat/01-health", 46, new Vec3(-163, 54));
-        UIBuilder.label(status, "HealthText", "420 / 420", new Size(170, 32), new Vec3(70, 57), 23, UI_THEME.colors.white, HorizontalTextAlignment.RIGHT);
-        UIBuilder.progressBar(status, "Health", new Size(278, 24), new Vec3(26, 24), 1, UI_THEME.colors.danger);
-        UIBuilder.label(status, "ShieldText", "护盾  180 / 180", new Size(220, 24), new Vec3(-18, -12), 15, UI_THEME.colors.white, HorizontalTextAlignment.LEFT);
-        UIBuilder.progressBar(status, "Shield", new Size(240, 16), new Vec3(13, -34), 1, UI_THEME.colors.cyan);
+        this.playerHealthText = UIBuilder.label(status, "HealthText", "", new Size(170, 32), new Vec3(70, 57), 23, UI_THEME.colors.white, HorizontalTextAlignment.RIGHT);
+        this.playerHealthBar = UIBuilder.progressBar(status, "Health", new Size(278, 24), new Vec3(26, 24), 1, UI_THEME.colors.danger);
+        this.playerShieldText = UIBuilder.label(status, "ShieldText", "", new Size(220, 24), new Vec3(-18, -12), 15, UI_THEME.colors.white, HorizontalTextAlignment.LEFT);
+        this.playerShieldBar = UIBuilder.progressBar(status, "Shield", new Size(240, 16), new Vec3(13, -34), 1, UI_THEME.colors.cyan);
         UIBuilder.label(status, "PollutionText", "污染  32 / 100", new Size(220, 24), new Vec3(-18, -60), 15, UI_THEME.colors.magenta, HorizontalTextAlignment.LEFT);
+        this.downedLabel = UIBuilder.label(status, "DownedText", "已倒地", new Size(120, 30), new Vec3(120, -60), 19, UI_THEME.colors.danger);
+        this.downedLabel.node.active = false;
     }
 
     private renderDayTimer(frame: SafeFrame): void {
@@ -323,7 +381,7 @@ export class BattleHUDViewComp extends GamePage {
             graphics.stroke();
         }
         graphics.fillColor = UI_THEME.colors.danger;
-        for (const enemy of this.simulation.enemies) {
+        for (const enemy of this.simulation.activeEnemies) {
             const position = this.mapPosition(enemy, width, height);
             graphics.circle(position.x, position.y, width > 200 ? 5 : 2.3);
             graphics.fill();
@@ -351,6 +409,8 @@ export class BattleHUDViewComp extends GamePage {
     private syncActors(): void {
         const simulation = this.simulation;
         this.playerNode.setPosition(simulation.player.x, simulation.player.y);
+        const structure = simulation.structures[0];
+        this.structureNode.setPosition(structure.x, structure.y);
         if (this.playerAnimator) {
             const target = simulation.playerTarget;
             this.playerAnimator.setFacing(target ? target.x >= simulation.player.x : simulation.facing.x >= 0);
@@ -368,12 +428,38 @@ export class BattleHUDViewComp extends GamePage {
             }
         }
         simulation.enemies.forEach((enemy, index) => {
-            this.enemyNodes[index]?.setPosition(enemy.x, enemy.y);
+            const node = this.enemyNodes[index];
+            if (!node || enemy.vitality.state === "dead") return;
+            node.setPosition(enemy.x, enemy.y);
             const animator = this.enemyAnimators[index];
             if (!animator) return;
             animator.setFacing(simulation.player.x >= enemy.x);
             animator.setBase(enemy.attacking ? "attack" : "walk");
         });
+    }
+
+    private syncVitality(): void {
+        const player = this.simulation.player.vitality;
+        this.playerHealthText.string = `${Math.ceil(player.currentHealth)} / ${player.maxHealth}`;
+        this.playerShieldText.string = `护盾  ${Math.ceil(player.currentShield)} / ${player.maxShield}`;
+        UIBuilder.setProgressBarRatio(this.playerHealthBar, player.healthRatio);
+        UIBuilder.setProgressBarRatio(this.playerShieldBar, player.shieldRatio);
+        this.downedLabel.node.active = player.state === "downed";
+
+        this.simulation.enemies.forEach((enemy, index) => {
+            const node = this.enemyNodes[index];
+            if (node) node.active = enemy.vitality.state !== "dead";
+            const healthBar = this.enemyHealthBars[index];
+            if (healthBar) UIBuilder.setProgressBarRatio(healthBar, enemy.vitality.healthRatio);
+        });
+
+        const structure = this.simulation.structures[0];
+        UIBuilder.setProgressBarRatio(this.structureHealthBar, structure.vitality.healthRatio);
+        const disabled = structure.vitality.state === "disabled";
+        this.structureStatusLabel.string = disabled
+            ? "路障 · 已失效"
+            : `路障 ${Math.ceil(structure.vitality.currentHealth)} / ${structure.vitality.maxHealth}`;
+        this.structureNode.getComponent(UIOpacity)!.opacity = disabled ? 110 : 255;
     }
 
     private updateCamera(deltaTime: number): void {
