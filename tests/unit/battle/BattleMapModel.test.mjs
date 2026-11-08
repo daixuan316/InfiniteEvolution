@@ -28,3 +28,30 @@ test("world and grid coordinate conversion round-trips every important point", (
         assert.deepEqual(map.worldToCell(map.cellToWorld(cell)), cell);
     }
 });
+
+test("hospital district places reachable loot and exploration points", () => {
+    const map = createHospitalDistrictMap();
+    const pathfinder = new GridPathfinder(map);
+
+    assert.equal(map.loot.length, 4);
+    assert.equal(map.explorationPoints.length, 3);
+    assert.equal(new Set(map.loot.map((item) => item.id)).size, map.loot.length);
+    assert.equal(new Set(map.explorationPoints.map((item) => item.id)).size, map.explorationPoints.length);
+
+    for (const item of [...map.loot, ...map.explorationPoints]) {
+        assert.equal(map.isWalkable(item.cell), true, `${item.id} must be walkable`);
+        assert.ok(pathfinder.findPath(map.start, item.cell).length > 0, `${item.id} must be reachable`);
+        assert.deepEqual(map.worldToCell(map.cellToWorld(item.cell)), item.cell);
+    }
+});
+
+test("breakable barrier owns dynamic blocked cells and opens them once destroyed", () => {
+    const map = createHospitalDistrictMap();
+    const barrier = map.barriers[0];
+
+    assert.ok(barrier.blockedCells.length >= 4);
+    for (const cell of barrier.blockedCells) assert.equal(map.isWalkable(cell), false);
+    assert.equal(map.setBarrierBlocking("missing", false), false);
+    assert.equal(map.setBarrierBlocking(barrier.id, false), true);
+    for (const cell of barrier.blockedCells) assert.equal(map.isWalkable(cell), true);
+});
