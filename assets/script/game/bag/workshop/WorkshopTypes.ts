@@ -25,3 +25,39 @@ export interface WorkshopRecipe {
 }
 
 export type InventorySnapshot = Record<string, number>;
+
+export type WorkshopTaskStatus = "crafting" | "ready";
+
+export interface WorkshopTask {
+    id: string;
+    recipeId: string;
+    startedAt: number;
+    endsAt: number;
+    status: WorkshopTaskStatus;
+}
+
+export interface WorkshopSnapshot {
+    version: 1;
+    initialized: boolean;
+    workshopLevel: number;
+    inventory: InventorySnapshot;
+    tasks: WorkshopTask[];
+}
+
+export type EnqueueFailure =
+    | "recipe-missing"
+    | "recipe-locked"
+    | "materials-missing"
+    | "queue-full"
+    | "output-full"
+    | "save-failed";
+
+export type EnqueueResult =
+    | { ok: true; task: WorkshopTask }
+    | { ok: false; reason: EnqueueFailure };
+
+export interface SyncResult {
+    changed: boolean;
+    completedRecipeIds: string[];
+    saveFailed: boolean;
+}

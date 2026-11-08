@@ -55,10 +55,10 @@ test("a fourth task is rejected without consuming materials", () => {
 });
 
 test("queued outputs reserve capacity before inputs are consumed", () => {
-    const service = makeService({ scrap: 99, mechanical_parts: 20, electronics: 5 }, new MemoryWorkshopRepository(), 1);
+    const service = makeService({ scrap: 99, medical_supplies: 99 }, new MemoryWorkshopRepository(), 2);
     const before = service.inventory.toSnapshot();
 
-    assert.deepEqual(service.enqueue("assault_rifle", NOW), { ok: false, reason: "output-full" });
+    assert.deepEqual(service.enqueue("medkit", NOW), { ok: false, reason: "output-full" });
     assert.deepEqual(service.inventory.toSnapshot(), before);
 });
 
