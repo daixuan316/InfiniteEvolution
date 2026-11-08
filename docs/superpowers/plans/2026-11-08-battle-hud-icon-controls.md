@@ -167,7 +167,7 @@ Expected: FAIL because the view still creates text labels and a `SkillAction` no
 
 - [ ] **Step 3: Import and use semantic icon paths**
 
-Import `BATTLE_HUD_ICON_ASSETS` from `../common/ui/UIIconAssets`. Replace hardcoded battle icon paths for health, shield, pollution, day timer, minimap, pause, objective, return-Ark, sprint, and dodge wherever those nodes are constructed.
+Import `BATTLE_HUD_ICON_ASSETS` from `../common/ui/UIIconAssets`. In `renderPlayerStatus`, use `health`, add the existing `shield` and `pollution` icons beside their value rows, and remove no live values. In `renderDayTimer`, use `dayTimer`. In `renderMinimap`, add `minimap` to the visible map plate and use `pause` for the pause entry. In `renderObjective`, add `objective` to the objective surface and use `returnArk` for the return entry. In `renderTouchControls`, use `sprint` and `dodge`.
 
 - [ ] **Step 4: Remove the skill control and make sprint/dodge icon-only**
 
@@ -198,7 +198,7 @@ void UIBuilder.icon(dodge, BATTLE_HUD_ICON_ASSETS.dodge, 62, Vec3.ZERO);
 this.bindTouch(dodge, () => { this.simulation.tryDodge(); });
 ```
 
-Do not change `battleControlLayout()` coordinates or sizes; the unused `skillAction` rectangle may remain in the pure layout contract temporarily for compatibility, but the view must not read it or create a node from it.
+Do not change `battleControlLayout()` coordinates or sizes in this task. Keep the existing `skillAction` rectangle in the pure layout contract because existing layout tests use it to protect safe-area spacing, but the view must not read it or create a node from it.
 
 - [ ] **Step 5: Make the remaining functional entries icon-only**
 
