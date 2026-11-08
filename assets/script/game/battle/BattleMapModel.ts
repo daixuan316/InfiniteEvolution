@@ -1,3 +1,6 @@
+import type { InfiniteChunkDefinition } from "../world/infinite/InfiniteChunkGenerator.ts";
+import type { ChunkCoordinate } from "../world/infinite/InfiniteWorldTypes.ts";
+
 export interface GridPoint {
     x: number;
     y: number;
@@ -260,6 +263,3 @@ export function createHospitalDistrictMap(): BattleMapDefinition {
         },
     };
 }
-import type { InfiniteChunkDefinition } from "../world/infinite/InfiniteChunkGenerator.ts";
-import type { ChunkCoordinate } from "../world/infinite/InfiniteWorldTypes.ts";
-
