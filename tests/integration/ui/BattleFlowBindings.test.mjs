@@ -52,3 +52,23 @@ test("UI builder exposes reusable progress updates", () => {
     assert.match(source, /static setProgressBarRatio\(track: Node, ratio: number\)/);
     assert.match(source, /getChildByName\(`\$\{track\.name\}Fill`\)/);
 });
+
+test("Battle HUD renders simulation projectiles", () => {
+    const source = readFileSync("assets/script/game/battle/BattleHUDViewComp.ts", "utf8");
+
+    assert.match(source, /simulation\.projectiles/);
+    assert.match(source, /projectileNodes = new Map<string, Node>/);
+    assert.match(source, /syncProjectiles\(\)/);
+    assert.match(source, /createProjectileNode/);
+});
+
+test("Battle HUD consumes hit events into timed feedback", () => {
+    const source = readFileSync("assets/script/game/battle/BattleHUDViewComp.ts", "utf8");
+
+    assert.match(source, /simulation\.hitEvents/);
+    assert.match(source, /damageFeedbacks/);
+    assert.match(source, /hitFlashRemaining/);
+    assert.match(source, /updateCombatFeedback\(deltaTime\)/);
+    assert.match(source, /0\.65/);
+    assert.match(source, /0\.12/);
+});

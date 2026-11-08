@@ -32,6 +32,15 @@ import { BattleSimulation } from "./BattleSimulation";
 
 const { ccclass } = _decorator;
 
+interface DamageFeedback {
+    readonly node: Node;
+    readonly opacity: UIOpacity;
+    readonly startX: number;
+    readonly startY: number;
+    readonly duration: number;
+    elapsed: number;
+}
+
 @ccclass("BattleHUDViewComp")
 export class BattleHUDViewComp extends GamePage {
     /** Sprite sheet per action for each actor art; generated sheets can land incrementally. */
@@ -76,6 +85,9 @@ export class BattleHUDViewComp extends GamePage {
     private structureNode!: Node;
     private structureHealthBar!: Node;
     private structureStatusLabel!: Label;
+    private readonly projectileNodes = new Map<string, Node>();
+    private readonly damageFeedbacks: DamageFeedback[] = [];
+    private readonly hitFlashRemaining = new Map<string, number>();
     private lastDodgeCount = 0;
     private pathGraphics!: Graphics;
     private minimapDynamic!: Graphics;
@@ -105,6 +117,9 @@ export class BattleHUDViewComp extends GamePage {
         this.simulation.update(deltaTime);
         this.syncActors();
         this.syncVitality();
+        this.syncProjectiles();
+        this.consumeHitEvents();
+        this.updateCombatFeedback(deltaTime);
         this.updateCamera(deltaTime);
         this.syncPath();
         this.drawDynamicMap(this.minimapDynamic, 142, 82, true);
@@ -132,6 +147,7 @@ export class BattleHUDViewComp extends GamePage {
         this.renderFullMap(this.frame);
         this.syncActors();
         this.syncVitality();
+        this.syncProjectiles();
         this.updateCamera(1);
         this.drawDynamicMap(this.minimapDynamic, 142, 82, true);
     }
@@ -237,6 +253,7 @@ export class BattleHUDViewComp extends GamePage {
 
     private createActor(name: string, asset: string, size: number): Node {
         const actor = this.createNode(this.worldLayer, name, new Size(size, size), Vec3.ZERO);
+        actor.addComponent(UIOpacity);
         const animator = actor.addComponent(ActorAnimator);
         animator.setup({
             fallback: asset,
@@ -460,6 +477,127 @@ export class BattleHUDViewComp extends GamePage {
             ? "路障 · 已失效"
             : `路障 ${Math.ceil(structure.vitality.currentHealth)} / ${structure.vitality.maxHealth}`;
         this.structureNode.getComponent(UIOpacity)!.opacity = disabled ? 110 : 255;
+    }
+
+    private createProjectileNode(id: string): Node {
+        const node = this.createNode(this.worldLayer, `Projectile:${id}`, new Size(44, 18), Vec3.ZERO);
+        const graphics = node.addComponent(Graphics);
+        graphics.strokeColor = new Color(255, 220, 112, 90);
+        graphics.lineWidth = 10;
+        graphics.moveTo(-12, 0);
+        graphics.lineTo(8, 0);
+        graphics.stroke();
+        graphics.strokeColor = new Color(255, 151, 31, 230);
+        graphics.lineWidth = 5;
+        graphics.moveTo(-18, 0);
+        graphics.lineTo(5, 0);
+        graphics.stroke();
+        graphics.fillColor = new Color(255, 244, 184, 255);
+        graphics.circle(8, 0, 4.5);
+        graphics.fill();
+        return node;
+    }
+
+    private syncProjectiles(): void {
+        const activeIds = new Set<string>();
+        for (const projectile of this.simulation.projectiles) {
+            activeIds.add(projectile.id);
+            let node = this.projectileNodes.get(projectile.id);
+            if (!node) {
+                node = this.createProjectileNode(projectile.id);
+                this.projectileNodes.set(projectile.id, node);
+            }
+            node.setPosition(projectile.x, projectile.y);
+            const target = this.simulation.enemies.find((enemy) => enemy.id === projectile.targetId);
+            if (target) {
+                const angle = Math.atan2(target.y - projectile.y, target.x - projectile.x) * 180 / Math.PI;
+                node.setRotationFromEuler(0, 0, angle);
+            }
+        }
+        for (const [id, node] of this.projectileNodes) {
+            if (activeIds.has(id)) continue;
+            node.destroy();
+            this.projectileNodes.delete(id);
+        }
+    }
+
+    private consumeHitEvents(): void {
+        for (const event of this.simulation.hitEvents) {
+            const idParts = event.id.split("-");
+            const eventNumber = Number(idParts[idParts.length - 1]);
+            const horizontalOffset = eventNumber % 2 === 0 ? 12 : -12;
+            const color = this.hitFeedbackColor(event.targetId, event.shieldDamage, event.healthDamage);
+            const startX = event.x + horizontalOffset;
+            const startY = event.y + 36;
+            const label = UIBuilder.label(
+                this.worldLayer,
+                `Damage:${event.id}`,
+                `-${Math.ceil(event.amount)}`,
+                new Size(110, 42),
+                new Vec3(startX, startY),
+                25,
+                color,
+            );
+            const opacity = label.node.addComponent(UIOpacity);
+            this.damageFeedbacks.push({
+                node: label.node,
+                opacity,
+                startX,
+                startY,
+                duration: 0.65,
+                elapsed: 0,
+            });
+            this.hitFlashRemaining.set(event.targetId, 0.12);
+        }
+    }
+
+    private hitFeedbackColor(targetId: string, shieldDamage: number, healthDamage: number): Color {
+        if (targetId.startsWith("enemy-")) return UI_THEME.colors.orange;
+        if (targetId === this.simulation.player.id) {
+            return healthDamage > 0 ? UI_THEME.colors.danger : UI_THEME.colors.cyan;
+        }
+        if (shieldDamage > 0 && healthDamage === 0) return UI_THEME.colors.cyan;
+        return new Color(255, 104, 48, 255);
+    }
+
+    private updateCombatFeedback(deltaTime: number): void {
+        for (let index = this.damageFeedbacks.length - 1; index >= 0; index--) {
+            const feedback = this.damageFeedbacks[index];
+            feedback.elapsed += Math.max(0, deltaTime);
+            const progress = Math.min(1, feedback.elapsed / feedback.duration);
+            feedback.node.setPosition(feedback.startX, feedback.startY + progress * 64);
+            const fade = progress <= 0.45 ? 1 : 1 - (progress - 0.45) / 0.55;
+            feedback.opacity.opacity = Math.round(Math.max(0, fade) * 255);
+            if (progress < 1) continue;
+            feedback.node.destroy();
+            this.damageFeedbacks.splice(index, 1);
+        }
+
+        for (const [targetId, remaining] of this.hitFlashRemaining) {
+            const next = Math.max(0, remaining - Math.max(0, deltaTime));
+            this.applyHitOpacity(targetId, next > 0);
+            if (next === 0) this.hitFlashRemaining.delete(targetId);
+            else this.hitFlashRemaining.set(targetId, next);
+        }
+    }
+
+    private applyHitOpacity(targetId: string, flashing: boolean): void {
+        let targetNode: Node | undefined;
+        let restingOpacity = 255;
+        if (targetId === this.simulation.player.id) {
+            targetNode = this.playerNode;
+        } else {
+            const enemyIndex = this.simulation.enemies.findIndex((enemy) => enemy.id === targetId);
+            if (enemyIndex >= 0) targetNode = this.enemyNodes[enemyIndex];
+            const structure = this.simulation.structures.find((candidate) => candidate.id === targetId);
+            if (structure) {
+                targetNode = this.structureNode;
+                restingOpacity = structure.vitality.state === "disabled" ? 110 : 255;
+            }
+        }
+        if (!targetNode) return;
+        const opacity = targetNode.getComponent(UIOpacity) ?? targetNode.addComponent(UIOpacity);
+        opacity.opacity = flashing ? Math.min(restingOpacity, 145) : restingOpacity;
     }
 
     private updateCamera(deltaTime: number): void {
