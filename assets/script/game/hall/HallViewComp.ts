@@ -9,7 +9,7 @@ import { UIBuilder } from "../common/ui/UIBuilder";
 import { FEATURE_ROUTES } from "../common/ui/UIRoute";
 import { uiNavigation } from "../common/ui/UIRuntime";
 import { UI_THEME } from "../common/ui/UITheme";
-import { filledSegments, fitSizeWithin } from "./HallLayout";
+import { filledSegments, fitSizeWithin, hallTopBarLeftLayout, isHazardStripeBright } from "./HallLayout";
 
 const { ccclass } = _decorator;
 
@@ -26,12 +26,6 @@ const RESOURCE_ICONS: Readonly<Record<string, string>> = {
     scrap: "resources-items/01-scrap",
     alloy: "resources-items/02-alloy",
     energy: "resources-items/04-energy-cell",
-};
-
-const RESOURCE_LABELS: Readonly<Record<string, string>> = {
-    scrap: "废料",
-    alloy: "合金",
-    energy: "能源",
 };
 
 @ccclass("HallViewComp")
@@ -72,11 +66,11 @@ export class HallViewComp extends GamePage {
     private renderTopBar(width: number, y: number, height: number): void {
         const topWidth = width - UI_THEME.safeMargin * 2;
         const top = UIBuilder.surface(this.node, "TopStatus", new Size(topWidth, height), new Vec3(0, y), "large");
-        const chapterWidth = 330;
-        UIBuilder.label(top, "ChapterBadge", "01", new Size(84, 54), new Vec3(-width / 2 + 76, 0), 32, UI_THEME.colors.white);
-        UIBuilder.label(top, "Chapter", HALL_DEMO_VIEW_MODEL.chapter, new Size(210, 42), new Vec3(-width / 2 + 210, 0), 21, UI_THEME.colors.white, HorizontalTextAlignment.LEFT);
-        void UIBuilder.icon(top, "hud-combat/05-day-timer", 48, new Vec3(-width / 2 + chapterWidth + 38, 0));
-        UIBuilder.label(top, "Day", `${String(HALL_DEMO_VIEW_MODEL.day).padStart(2, "0")}  ${HALL_DEMO_VIEW_MODEL.phase}`, new Size(220, 42), new Vec3(-width / 2 + chapterWidth + 160, 0), 22, UI_THEME.colors.orange, HorizontalTextAlignment.LEFT);
+        const leftLayout = hallTopBarLeftLayout(topWidth);
+        UIBuilder.label(top, "ChapterBadge", "01", new Size(leftLayout.chapterBadge.width, 48), new Vec3(leftLayout.chapterBadge.centerX, 0), 26, UI_THEME.colors.white);
+        UIBuilder.label(top, "Chapter", HALL_DEMO_VIEW_MODEL.chapter, new Size(leftLayout.chapter.width, 42), new Vec3(leftLayout.chapter.centerX, 0), 20, UI_THEME.colors.white, HorizontalTextAlignment.LEFT);
+        void UIBuilder.icon(top, "hud-combat/05-day-timer", leftLayout.dayIcon.width, new Vec3(leftLayout.dayIcon.centerX, 0));
+        UIBuilder.label(top, "Day", `${String(HALL_DEMO_VIEW_MODEL.day).padStart(2, "0")}  ${HALL_DEMO_VIEW_MODEL.phase}`, new Size(leftLayout.day.width, 42), new Vec3(leftLayout.day.centerX, 0), 20, UI_THEME.colors.orange, HorizontalTextAlignment.LEFT);
 
         const resourceRailWidth = Math.min(404, topWidth * 0.34);
         const resourceRail = UIBuilder.surface(
@@ -98,7 +92,7 @@ export class HallViewComp extends GamePage {
 
             const iconChip = UIBuilder.panel(cell, `ResourceIconChip:${resource.id}`, new Size(42, 42), new Vec3(-resourceCellWidth / 2 + 29, 0), new Color(3, 22, 34, 248), UI_THEME.colors.cyanDark);
             void UIBuilder.icon(iconChip, RESOURCE_ICONS[resource.id], 34);
-            UIBuilder.label(cell, `ResourceLabel:${resource.id}`, RESOURCE_LABELS[resource.id], new Size(68, 20), new Vec3(24, 13), 12, UI_THEME.colors.muted, HorizontalTextAlignment.LEFT);
+            UIBuilder.label(cell, `ResourceLabel:${resource.id}`, resource.label, new Size(68, 20), new Vec3(24, 13), 12, UI_THEME.colors.muted, HorizontalTextAlignment.LEFT);
             UIBuilder.label(cell, `ResourceValue:${resource.id}`, `${resource.value}`, new Size(72, 28), new Vec3(26, -10), 22, UI_THEME.colors.white, HorizontalTextAlignment.LEFT);
 
             if (index > 0) {
@@ -151,7 +145,11 @@ export class HallViewComp extends GamePage {
     }
 
     private renderArkOverview(x: number, y: number, width: number, height: number): void {
-        const panel = UIBuilder.surface(this.node, "ArkOverview", new Size(width, height), new Vec3(x, y), "large");
+        const panel = new Node("ArkOverview");
+        panel.layer = this.node.layer;
+        panel.addComponent(UITransform).setContentSize(width, height);
+        panel.setPosition(x, y);
+        this.node.addChild(panel);
         const artSize = fitSizeWithin(768, 512, width - 64, height - 118);
         UIBuilder.panel(
             panel,
@@ -183,7 +181,7 @@ export class HallViewComp extends GamePage {
         void UIBuilder.icon(countdown, "hud-combat/04-pollution", 38, new Vec3(-width / 2 + 58, 8));
         UIBuilder.label(countdown, "CountdownLabel", "尸潮抵达", new Size(116, 24), new Vec3(35, 22), 14, UI_THEME.colors.muted, HorizontalTextAlignment.LEFT);
         UIBuilder.label(countdown, "CountdownValue", HALL_DEMO_VIEW_MODEL.threat.countdown, new Size(116, 42), new Vec3(35, -11), 29, UI_THEME.colors.danger, HorizontalTextAlignment.LEFT);
-        this.addSegmentedBar(countdown, "ThreatWarningSegments", new Size(width - 58, 9), new Vec3(0, -42), 4, 8, UI_THEME.colors.orange);
+        this.addHazardStrip(countdown, "ThreatHazardStripe", new Size(width - 58, 9), new Vec3(0, -42), 8);
     }
 
     private renderStatusModule(parent: Node, name: string, icon: string, label: string, value: number, maximum: number, position: Vec3, color: Color): Node {
@@ -217,6 +215,24 @@ export class HallViewComp extends GamePage {
                 active ? color : new Color(7, 28, 38, 255),
                 active ? color : UI_THEME.colors.cyanDark,
             );
+        }
+        return root;
+    }
+
+    private addHazardStrip(parent: Node, name: string, size: Size, position: Vec3, count: number): Node {
+        const root = new Node(name);
+        root.layer = parent.layer;
+        root.addComponent(UITransform).setContentSize(size);
+        root.setPosition(position);
+        parent.addChild(root);
+
+        const gap = 3;
+        const segmentWidth = (size.width - gap * (count - 1)) / count;
+        for (let index = 0; index < count; index += 1) {
+            const x = -size.width / 2 + segmentWidth / 2 + index * (segmentWidth + gap);
+            const bright = isHazardStripeBright(index);
+            const color = bright ? UI_THEME.colors.orange : UI_THEME.colors.black;
+            UIBuilder.panel(root, `${name}:${index + 1}`, new Size(segmentWidth, size.height), new Vec3(x, 0), color, color);
         }
         return root;
     }
