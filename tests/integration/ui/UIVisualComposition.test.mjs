@@ -23,7 +23,12 @@ test("UI builder exposes texture-backed surfaces and HUD plates", () => {
     assert.match(source, /static async backdrop\(/);
     assert.match(source, /static surface\(/);
     assert.match(source, /static hudPlate\(/);
+    assert.match(source, /kind === "large"/);
+    assert.match(source, /compositeLargeSurfaceFrame/);
+    assert.match(source, /surfaceFramePieces\(size\.width, size\.height\)/);
+    assert.match(source, /new Rect\(piece\.source\.x, piece\.source\.y, piece\.source\.width, piece\.source\.height\)/);
     assert.match(source, /Sprite\.Type\.SLICED/);
+    assert.match(source, /Sprite\.Type\.SIMPLE/);
     assert.match(source, /textureFrameLayout\(assetPath\)/);
     assert.match(source, /frame\.reset\(/);
 });

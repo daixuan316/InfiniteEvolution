@@ -16,6 +16,7 @@ import {
 } from "cc";
 
 import { oops } from "../../../../../extensions/oops-plugin-framework/assets/core/Oops";
+import { shouldComposeLargeSurface, surfaceFramePieces } from "./SurfaceFrameLayout";
 import { textureAssetPath } from "./TextureAssetPath";
 import { textureFrameLayout } from "./TextureFrameLayout";
 import { UI_THEME } from "./UITheme";
@@ -184,8 +185,46 @@ export class UIBuilder {
     ): Node {
         const node = this.panel(parent, name, size, position, UI_THEME.colors.panel, UI_THEME.colors.cyanDark);
         const asset = this.SURFACE_ASSET[kind];
-        void this.sprite(node, `${this.COMMON_TEXTURE}/${asset}`, size, Vec3.ZERO, true, tint);
+        const assetPath = `${this.COMMON_TEXTURE}/${asset}`;
+        if (kind === "large" && shouldComposeLargeSurface(size.width, size.height)) {
+            void this.compositeLargeSurfaceFrame(node, assetPath, size, tint);
+        } else {
+            void this.sprite(node, assetPath, size, Vec3.ZERO, true, tint);
+        }
         return node;
+    }
+
+    private static async compositeLargeSurfaceFrame(parent: Node, assetPath: string, size: Size, tint: Color): Promise<void> {
+        const frameRoot = new Node("SurfaceFrame");
+        frameRoot.layer = parent.layer;
+        frameRoot.addComponent(UITransform).setContentSize(size);
+        parent.addChild(frameRoot);
+
+        const texture = await oops.res.load("bundle", textureAssetPath(assetPath), Texture2D);
+        if (!texture || !parent.isValid || !frameRoot.isValid) {
+            if (frameRoot.isValid) frameRoot.destroy();
+            return;
+        }
+
+        for (const piece of surfaceFramePieces(size.width, size.height)) {
+            const pieceNode = new Node(`SurfaceFrame:${piece.name}`);
+            pieceNode.layer = frameRoot.layer;
+            pieceNode.addComponent(UITransform).setContentSize(piece.width, piece.height);
+            pieceNode.setPosition(piece.x, piece.y);
+
+            const sprite = pieceNode.addComponent(Sprite);
+            const frame = new SpriteFrame();
+            frame.reset({
+                texture,
+                rect: new Rect(piece.source.x, piece.source.y, piece.source.width, piece.source.height),
+                originalSize: new Size(piece.source.width, piece.source.height),
+            }, true);
+            sprite.sizeMode = Sprite.SizeMode.CUSTOM;
+            sprite.type = Sprite.Type.SIMPLE;
+            sprite.spriteFrame = frame;
+            sprite.color = tint;
+            frameRoot.addChild(pieceNode);
+        }
     }
 
     static hudPlate(parent: Node, name: string, asset: string, size: Size, position: Vec3): Node {
