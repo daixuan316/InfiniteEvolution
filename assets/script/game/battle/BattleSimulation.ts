@@ -11,6 +11,10 @@ import { GridPathfinder } from "./GridPathfinder.ts";
 import { resolveDamage } from "../combat/DamageResolver.ts";
 import { VitalityRuntime, type VitalityChangeResult } from "../combat/Vitality.ts";
 import { createFirstNightHorde, type HordeDirector, type HordePhase } from "../monster/model/HordeDirector.ts";
+import {
+    DEFAULT_BATTLE_PLAYER_MODIFIERS,
+    type BattlePlayerModifiers,
+} from "../research/model/ResearchTypes.ts";
 
 export interface CombatTarget extends WorldPoint {
     readonly id: string;
@@ -30,6 +34,7 @@ export interface BattleStructure extends CombatTarget {
 
 export interface BattleSimulationOptions {
     readonly spawnInitialEnemies?: boolean;
+    readonly playerModifiers?: BattlePlayerModifiers;
     readonly arkCore?: {
         readonly position: WorldPoint;
         readonly maxHealth: number;
@@ -130,6 +135,20 @@ function normalize(x: number, y: number): WorldPoint {
     return length > 1 ? { x: x / length, y: y / length } : { x, y };
 }
 
+function normalizePlayerModifiers(modifiers: BattlePlayerModifiers | undefined): BattlePlayerModifiers {
+    if (!modifiers) return DEFAULT_BATTLE_PLAYER_MODIFIERS;
+    return {
+        maxHealthAdd: Number.isFinite(modifiers.maxHealthAdd) && modifiers.maxHealthAdd >= 0 ? modifiers.maxHealthAdd : 0,
+        maxShieldAdd: Number.isFinite(modifiers.maxShieldAdd) && modifiers.maxShieldAdd >= 0 ? modifiers.maxShieldAdd : 0,
+        attackDamageMultiplier: Number.isFinite(modifiers.attackDamageMultiplier) && modifiers.attackDamageMultiplier > 0
+            ? modifiers.attackDamageMultiplier
+            : 1,
+        moveSpeedMultiplier: Number.isFinite(modifiers.moveSpeedMultiplier) && modifiers.moveSpeedMultiplier > 0
+            ? modifiers.moveSpeedMultiplier
+            : 1,
+    };
+}
+
 export class BattleSimulation {
     readonly map: BattleMapDefinition;
     readonly playerRadius = 28;
@@ -142,7 +161,7 @@ export class BattleSimulation {
     /** Nearby fortifications intercept monsters before they continue toward the player. */
     readonly structureAggroRange = 300;
     readonly playerAttackInterval = 0.35;
-    readonly playerAttackDamage = 35;
+    readonly playerAttackDamage: number;
     readonly projectileSpeed = 1400;
     readonly projectileLifetime = 1.2;
     readonly interactionRange = 145;
@@ -185,13 +204,19 @@ export class BattleSimulation {
     constructor(map: BattleMapDefinition, options: BattleSimulationOptions = {}) {
         this.map = map;
         this.pathfinder = new GridPathfinder(map);
+        const playerModifiers = normalizePlayerModifiers(options.playerModifiers);
+        this.playerAttackDamage = 35 * playerModifiers.attackDamageMultiplier;
         this.player = {
             id: "player",
             ...map.cellToWorld(map.start),
             radius: this.playerRadius,
-            speed: 270,
+            speed: 270 * playerModifiers.moveSpeedMultiplier,
             defense: 20,
-            vitality: new VitalityRuntime({ maxHealth: 420, maxShield: 180, zeroState: "downed" }),
+            vitality: new VitalityRuntime({
+                maxHealth: 420 + playerModifiers.maxHealthAdd,
+                maxShield: 180 + playerModifiers.maxShieldAdd,
+                zeroState: "downed",
+            }),
         };
         this.enemies = options.spawnInitialEnemies === false ? [] : map.enemySpawns.map((spawn, index) => this.createEnemy(
             INITIAL_ENEMY_KINDS[index] ?? "walker",

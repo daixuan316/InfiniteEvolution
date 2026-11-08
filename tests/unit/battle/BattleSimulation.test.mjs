@@ -8,6 +8,25 @@ function advance(simulation, seconds, step = 1 / 60) {
     for (let elapsed = 0; elapsed < seconds; elapsed += step) simulation.update(step);
 }
 
+test("research modifiers change only player combat stats", () => {
+    const base = new BattleSimulation(createHospitalDistrictMap());
+    const upgraded = new BattleSimulation(createHospitalDistrictMap(), {
+        playerModifiers: {
+            maxHealthAdd: 80,
+            maxShieldAdd: 50,
+            attackDamageMultiplier: 1.15,
+            moveSpeedMultiplier: 1.08,
+        },
+    });
+
+    assert.equal(upgraded.player.vitality.maxHealth, 500);
+    assert.equal(upgraded.player.vitality.maxShield, 230);
+    assert.equal(upgraded.playerAttackDamage, 35 * 1.15);
+    assert.equal(upgraded.player.speed, 270 * 1.08);
+    assert.equal(upgraded.enemies[0].vitality.maxHealth, base.enemies[0].vitality.maxHealth);
+    assert.equal(upgraded.structures[0].vitality.maxHealth, base.structures[0].vitality.maxHealth);
+});
+
 test("player follows a cached route to a distant destination", () => {
     const map = createHospitalDistrictMap();
     const simulation = new BattleSimulation(map);
