@@ -24,8 +24,8 @@ import { GamePage } from "../common/ui/GamePage";
 import { SafeFrame, UIBuilder } from "../common/ui/UIBuilder";
 import { uiNavigation } from "../common/ui/UIRuntime";
 import { UI_THEME } from "../common/ui/UITheme";
-import { type HordePhase } from "../monster/model/HordeDirector";
 import { DayClock, explorationTimeScale, formatDayTime, type DayPressure } from "../world/model/DayClock";
+import { DayPhaseFlow } from "../world/model/DayPhaseFlow";
 import { ActorAction, ActorAnimator } from "./ActorAnimator";
 import { cameraTargetFor } from "./BattleCamera";
 import { battleControlLayout, playerStatusLayout } from "./BattleHUDLayout";
@@ -43,14 +43,6 @@ const DAY_PRESSURE_PRESENTATION: Readonly<Record<DayPressure, { readonly text: s
     warning: { text: "日落警戒", color: UI_THEME.colors.orange },
     night: { text: "夜幕降临", color: UI_THEME.colors.danger },
     hunt: { text: "尸群追猎", color: UI_THEME.colors.magenta },
-};
-const HORDE_PHASE_PRESENTATION: Readonly<Record<HordePhase, { readonly text: string; readonly color: Color }>> = {
-    warning: { text: "尸潮预警", color: UI_THEME.colors.orange },
-    probe: { text: "试探波", color: UI_THEME.colors.cyan },
-    assault: { text: "主攻波", color: UI_THEME.colors.danger },
-    respite: { text: "喘息维修", color: UI_THEME.colors.success },
-    climax: { text: "高潮波", color: UI_THEME.colors.magenta },
-    cleanup: { text: "清剿残敌", color: UI_THEME.colors.orange },
 };
 const ENEMY_PRESENTATION: Readonly<Record<EnemyKind, {
     readonly name: string;
@@ -111,6 +103,7 @@ export class BattleHUDViewComp extends GamePage {
     private playerShieldBar!: Node;
     private downedLabel!: Label;
     private readonly dayClock = new DayClock(DAY_DURATION_SECONDS, DAY_WARNING_SECONDS, DAY_NIGHT_SECONDS, DAY_HUNT_SECONDS);
+    private readonly dayPhaseFlow = new DayPhaseFlow();
     private dayTimeLabel!: Label;
     private dayPressureLabel!: Label;
     private dayProgressBar!: Node;
@@ -154,8 +147,7 @@ export class BattleHUDViewComp extends GamePage {
     private sprintTouch = false;
     private paused = false;
     private lastPathSignature = "";
-    private lastHordePhase: HordePhase | null = null;
-    private nightCompletedDispatched = false;
+    private returningToShelter = false;
     private barrierWasActive = true;
 
     protected onLoad(): void {
@@ -169,11 +161,9 @@ export class BattleHUDViewComp extends GamePage {
     update(deltaTime: number): void {
         const fullMapOpen = Boolean(this.fullMapPanel?.active);
         this.advanceDayClock(deltaTime, explorationTimeScale(this.paused, fullMapOpen));
-        this.syncHordeEvents();
         if (this.paused || fullMapOpen) return;
         this.simulation.update(deltaTime);
         this.syncDayTimer();
-        this.syncHordeEvents();
         this.syncActors();
         this.syncVitality();
         this.syncProjectiles();
@@ -424,9 +414,6 @@ export class BattleHUDViewComp extends GamePage {
         const previousSecond = Math.ceil(this.dayClock.remaining);
         const previousPressure = this.dayClock.pressure;
         this.dayClock.tick(deltaTime, timeScale);
-        if (this.dayClock.pressure === "night" || this.dayClock.pressure === "hunt") {
-            this.simulation.startHorde(1);
-        }
         this.syncDayTimer();
 
         if (Math.ceil(this.dayClock.remaining) !== previousSecond) {
@@ -435,22 +422,12 @@ export class BattleHUDViewComp extends GamePage {
         if (this.dayClock.pressure !== previousPressure) {
             oops.message.dispatchEvent(GameEvent.DayPressureChanged, this.dayClock.pressure);
         }
+        if (this.dayPhaseFlow.update(this.dayClock.pressure) === "return-to-shelter") {
+            void this.enterNightDefense();
+        }
     }
 
     private syncDayTimer(): void {
-        if (this.simulation.hordeStarted) {
-            const phase = this.simulation.hordePhase;
-            const presentation = phase ? HORDE_PHASE_PRESENTATION[phase] : HORDE_PHASE_PRESENTATION.warning;
-            this.dayTimeLabel.string = this.simulation.hordeCompleted
-                ? "防守完成"
-                : `威胁 ${this.simulation.remainingHordeThreats}`;
-            this.dayPressureLabel.string = this.simulation.hordeCompleted ? "尸潮击退" : presentation.text;
-            this.dayPressureLabel.color = this.simulation.hordeCompleted ? UI_THEME.colors.success : presentation.color;
-            this.dayTimeLabel.color = this.dayPressureLabel.color;
-            UIBuilder.setProgressBarRatio(this.dayProgressBar, this.simulation.hordeProgressRatio);
-            return;
-        }
-
         this.dayTimeLabel.string = formatDayTime(this.dayClock.remaining);
         UIBuilder.setProgressBarRatio(this.dayProgressBar, this.dayClock.remainingRatio);
 
@@ -460,17 +437,13 @@ export class BattleHUDViewComp extends GamePage {
         this.dayTimeLabel.color = presentation.color;
     }
 
-    private syncHordeEvents(): void {
-        const phase = this.simulation.hordePhase;
-        if (phase && phase !== this.lastHordePhase) {
-            this.lastHordePhase = phase;
-            if (phase === "warning") oops.message.dispatchEvent(GameEvent.HordeWarning);
-            oops.message.dispatchEvent(GameEvent.HordeWaveChanged, phase, this.simulation.remainingHordeThreats);
-        }
-        if (this.simulation.hordeCompleted && !this.nightCompletedDispatched) {
-            this.nightCompletedDispatched = true;
-            oops.message.dispatchEvent(GameEvent.NightCompleted);
-        }
+    private async enterNightDefense(): Promise<void> {
+        if (this.returningToShelter) return;
+        this.returningToShelter = true;
+        oops.message.dispatchEvent(GameEvent.DayReturned);
+        const entered = await uiNavigation.replace(UIID.NightDefense, { night: 1 });
+        if (entered) oops.message.dispatchEvent(GameEvent.NightDefenseStarted, 1);
+        else this.returningToShelter = false;
     }
 
     private renderMinimap(frame: SafeFrame): void {

@@ -22,6 +22,10 @@ export enum GameEvent {
     DayTimeChanged = "DayTimeChanged",
     /** 白昼压力阶段变化 */
     DayPressureChanged = "DayPressureChanged",
+    /** 日落后已从探索区撤回庇护所 */
+    DayReturned = "DayReturned",
+    /** 夜间庇护所防守开始 */
+    NightDefenseStarted = "NightDefenseStarted",
     /** 夜间尸潮进入预警 */
     HordeWarning = "HordeWarning",
     /** 尸潮波次阶段变化 */

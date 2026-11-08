@@ -20,12 +20,16 @@ for (const frame of [
     });
 }
 
-test("player status text stays inside the plate and aligns with its bars", () => {
+test("player status text stays inside the plate without crossing thin bars", () => {
     assert.equal(typeof battleLayout.playerStatusLayout, "function", "player status layout should be explicit and testable");
     const layout = battleLayout.playerStatusLayout();
 
     assert.equal(layout.healthText.centerY, layout.healthBar.centerY);
-    assert.equal(layout.shieldText.centerY, layout.shieldBar.centerY);
+    assert.equal(rectanglesOverlap(layout.healthBar, layout.shieldText), false);
+    assert.equal(rectanglesOverlap(layout.shieldText, layout.shieldBar), false);
+    assert.equal(rectanglesOverlap(layout.shieldBar, layout.pollutionText), false);
+    assert.equal(layout.shieldText.left, layout.shieldBar.left);
+    assert.equal(layout.pollutionText.left, layout.shieldBar.left);
 
     for (const text of [layout.healthText, layout.shieldText, layout.pollutionText, layout.downedText]) {
         assert.ok(text.left >= layout.content.left);

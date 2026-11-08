@@ -60,12 +60,12 @@ export function battleControlLayout(frame: BattleSafeEdges): BattleControlLayout
 export function playerStatusLayout(): BattlePlayerStatusLayout {
     return {
         content: centeredRect(19, -5, 322, 106),
-        healthBar: centeredRect(26, 24, 278, 24),
-        healthText: centeredRect(70, 24, 170, 24),
-        shieldBar: centeredRect(13, -10, 240, 16),
-        shieldText: centeredRect(-18, -10, 220, 22),
-        pollutionText: centeredRect(-50, -42, 150, 22),
-        downedText: centeredRect(115, -42, 120, 24),
+        healthBar: centeredRect(26, 31, 278, 24),
+        healthText: centeredRect(70, 31, 170, 24),
+        shieldBar: centeredRect(7, -15, 240, 16),
+        shieldText: centeredRect(-3, 5, 220, 18),
+        pollutionText: centeredRect(-28, -39, 170, 18),
+        downedText: centeredRect(120, -39, 110, 22),
     };
 }
 

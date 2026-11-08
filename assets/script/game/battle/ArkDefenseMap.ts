@@ -35,7 +35,7 @@ export function createArkDefenseMap(): BattleMapDefinition {
         tileSize: TILE_SIZE,
         worldWidth,
         worldHeight,
-        start: { x: 7, y: 4 },
+        start: { x: 7, y: 3 },
         extraction: { x: 7, y: 4 },
         enemySpawns: [
             { x: 1, y: 1 },

@@ -5,6 +5,36 @@ export interface WorkshopRepository {
     save(snapshot: WorkshopSnapshot): void;
 }
 
+export interface KeyValueStore {
+    getItem(key: string): string | null;
+    setItem(key: string, value: string): void;
+    removeItem(key: string): void;
+}
+
+const WORKSHOP_SAVE_KEY = "infinite-evolution.workshop.v1";
+const WORKSHOP_INITIALIZED_KEY = "infinite-evolution.workshop.initialized";
+
+function repairedEmptySnapshot(initialized: boolean): WorkshopSnapshot {
+    return {
+        version: 1,
+        initialized,
+        workshopLevel: 1,
+        inventory: {},
+        tasks: [],
+    };
+}
+
+function isSnapshotShape(value: unknown): value is WorkshopSnapshot {
+    if (!value || typeof value !== "object") return false;
+    const candidate = value as Partial<WorkshopSnapshot>;
+    return candidate.version === 1
+        && typeof candidate.initialized === "boolean"
+        && typeof candidate.workshopLevel === "number"
+        && Boolean(candidate.inventory)
+        && typeof candidate.inventory === "object"
+        && Array.isArray(candidate.tasks);
+}
+
 function cloneSnapshot(snapshot: WorkshopSnapshot): WorkshopSnapshot {
     return {
         version: 1,
@@ -33,5 +63,30 @@ export class MemoryWorkshopRepository implements WorkshopRepository {
             throw new Error("simulated workshop save failure");
         }
         this.snapshot = cloneSnapshot(snapshot);
+    }
+}
+
+export class LocalStorageWorkshopRepository implements WorkshopRepository {
+    private readonly store: KeyValueStore;
+
+    constructor(store: KeyValueStore) {
+        this.store = store;
+    }
+
+    load(): WorkshopSnapshot | null {
+        const raw = this.store.getItem(WORKSHOP_SAVE_KEY);
+        const initialized = this.store.getItem(WORKSHOP_INITIALIZED_KEY) === "1";
+        if (raw === null) return initialized ? repairedEmptySnapshot(true) : null;
+        try {
+            const parsed: unknown = JSON.parse(raw);
+            return isSnapshotShape(parsed) ? cloneSnapshot(parsed) : repairedEmptySnapshot(initialized);
+        } catch {
+            return repairedEmptySnapshot(initialized);
+        }
+    }
+
+    save(snapshot: WorkshopSnapshot): void {
+        this.store.setItem(WORKSHOP_SAVE_KEY, JSON.stringify(cloneSnapshot(snapshot)));
+        this.store.setItem(WORKSHOP_INITIALIZED_KEY, "1");
     }
 }

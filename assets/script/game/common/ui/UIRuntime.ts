@@ -2,6 +2,7 @@ import { Node } from "cc";
 
 import { oops } from "../../../../../extensions/oops-plugin-framework/assets/core/Oops";
 import { BattleHUDViewComp } from "../../battle/BattleHUDViewComp";
+import { NightDefenseViewComp } from "../../battle/NightDefenseViewComp";
 import { HallViewComp } from "../../hall/HallViewComp";
 import { ConfirmDialogViewComp } from "../../ui/ConfirmDialogViewComp";
 import { FeaturePageViewComp } from "../../ui/FeaturePageViewComp";
@@ -39,5 +40,6 @@ UIPageBootstrap.register(UIID.Research, FeaturePageViewComp);
 UIPageBootstrap.register(UIID.Crew, FeaturePageViewComp);
 UIPageBootstrap.register(UIID.Intel, FeaturePageViewComp);
 UIPageBootstrap.register(UIID.BattleHUD, BattleHUDViewComp);
+UIPageBootstrap.register(UIID.NightDefense, NightDefenseViewComp);
 UIPageBootstrap.register(UIID.PauseOverlay, PauseOverlayViewComp);
 UIPageBootstrap.register(UIID.ConfirmDialog, ConfirmDialogViewComp);
