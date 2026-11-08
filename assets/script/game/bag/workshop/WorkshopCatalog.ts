@@ -26,7 +26,7 @@ export const STARTER_INVENTORY: Readonly<InventorySnapshot> = Object.freeze({
     medical_supplies: 20,
 });
 
-export const WORKSHOP_RECIPES: readonly WorkshopRecipe[] = Object.freeze([
+const RECIPE_DATA: readonly WorkshopRecipe[] = [
     {
         id: "assault_rifle",
         name: "突击步枪",
@@ -116,7 +116,9 @@ export const WORKSHOP_RECIPES: readonly WorkshopRecipe[] = Object.freeze([
         durationMs: 30_000,
         requiredWorkshopLevel: 1,
     },
-].map((recipe) => Object.freeze({
+];
+
+export const WORKSHOP_RECIPES: readonly WorkshopRecipe[] = Object.freeze(RECIPE_DATA.map((recipe) => Object.freeze({
     ...recipe,
     inputs: Object.freeze(recipe.inputs.map((input) => Object.freeze({ ...input }))),
 })));

@@ -186,7 +186,7 @@ export class WorkshopViewComp extends GamePage {
 
     private startCraft(): void {
         const result = workshopRuntime.enqueue(this.selectedRecipeId);
-        if (!result.ok) {
+        if ("reason" in result) {
             oops.gui.toast(FAILURE_TOAST[result.reason]);
             return;
         }
