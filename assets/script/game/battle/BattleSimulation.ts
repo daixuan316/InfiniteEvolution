@@ -39,6 +39,19 @@ export interface BattleProjectile extends WorldPoint {
     remainingLifetime: number;
 }
 
+export type CombatHitKind = "projectile" | "melee";
+
+export interface CombatHitEvent extends WorldPoint {
+    readonly id: string;
+    readonly kind: CombatHitKind;
+    readonly sourceId: string;
+    readonly targetId: string;
+    readonly amount: number;
+    readonly shieldDamage: number;
+    readonly healthDamage: number;
+    readonly becameZero: boolean;
+}
+
 const ENEMY_COMBAT = [
     { health: 90, defense: 5, damage: 18, interval: 1 },
     { health: 70, defense: 0, damage: 12, interval: 0.55 },
@@ -74,6 +87,7 @@ export class BattleSimulation {
     readonly enemies: EnemyAgent[];
     readonly structures: BattleStructure[];
     readonly projectiles: BattleProjectile[] = [];
+    readonly hitEvents: CombatHitEvent[] = [];
     playerPath: GridPoint[] = [];
     /** Animation-facing battle state, refreshed every update. */
     playerMoving = false;
@@ -88,6 +102,7 @@ export class BattleSimulation {
     private dodgeCooldown = 0;
     private playerAttackCooldown = 0;
     private nextProjectileId = 1;
+    private nextHitEventId = 1;
     private readonly pathfinder: GridPathfinder;
 
     constructor(map: BattleMapDefinition) {
@@ -183,6 +198,7 @@ export class BattleSimulation {
     }
 
     update(deltaTime: number): void {
+        this.hitEvents.length = 0;
         const dt = Math.max(0, Math.min(deltaTime, 0.1));
         this.dodgeCooldown = Math.max(0, this.dodgeCooldown - dt);
         this.playerDodgePlayback = Math.max(0, this.playerDodgePlayback - dt);
@@ -266,7 +282,7 @@ export class BattleSimulation {
             const targetDistance = Math.hypot(dx, dy);
             const travel = projectile.speed * dt;
             if (targetDistance <= travel + target.radius) {
-                this.applyResolvedDamage(this.player, target, projectile.baseDamage, projectile.tags);
+                this.applyResolvedDamage(this.player, target, projectile.baseDamage, projectile.tags, "projectile");
                 this.projectiles.splice(index, 1);
                 if (!target.vitality.active && this.playerTarget?.id === target.id) {
                     this.playerTarget = null;
@@ -334,7 +350,7 @@ export class BattleSimulation {
 
     private updateEnemyAttack(enemy: EnemyAgent, target: CombatTarget): void {
         if (enemy.attackCooldown > 0) return;
-        this.applyResolvedDamage(enemy, target, enemy.attackDamage, ["physical", "melee"]);
+        this.applyResolvedDamage(enemy, target, enemy.attackDamage, ["physical", "melee"], "melee");
         enemy.attackCooldown = enemy.attackInterval;
     }
 
@@ -343,6 +359,7 @@ export class BattleSimulation {
         target: CombatTarget,
         baseDamage: number,
         tags: readonly string[],
+        kind: CombatHitKind,
     ): VitalityChangeResult {
         const resolution = resolveDamage({
             sourceId: source.id,
@@ -351,7 +368,23 @@ export class BattleSimulation {
             defense: target.defense,
             tags,
         });
-        return target.vitality.applyDamage(resolution.accepted ? resolution.amount : Number.NaN);
+        const result = target.vitality.applyDamage(resolution.accepted ? resolution.amount : Number.NaN);
+        const amount = result.shieldDamage + result.healthDamage;
+        if (result.accepted && amount > 0) {
+            this.hitEvents.push({
+                id: `hit-${this.nextHitEventId++}`,
+                kind,
+                sourceId: source.id,
+                targetId: target.id,
+                amount,
+                shieldDamage: result.shieldDamage,
+                healthDamage: result.healthDamage,
+                becameZero: result.becameZero,
+                x: target.x,
+                y: target.y,
+            });
+        }
+        return result;
     }
 
     private stopPlayerActions(): void {

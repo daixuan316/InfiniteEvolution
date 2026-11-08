@@ -267,3 +267,58 @@ test("projectile expires after its maximum lifetime", () => {
     assert.equal(simulation.projectiles.length, 0);
     assert.equal(enemy.vitality.currentHealth, enemy.vitality.maxHealth);
 });
+
+test("projectile impact emits actual health damage", () => {
+    const simulation = new BattleSimulation(createHospitalDistrictMap());
+    const enemy = simulation.enemies[0];
+    enemy.x = simulation.player.x + 180;
+    enemy.y = simulation.player.y;
+
+    for (let index = 0; index < 30 && simulation.hitEvents.length === 0; index++) {
+        simulation.update(1 / 60);
+    }
+
+    const event = simulation.hitEvents[0];
+    assert.equal(event.kind, "projectile");
+    assert.equal(event.sourceId, "player");
+    assert.equal(event.targetId, enemy.id);
+    assert.equal(event.shieldDamage, 0);
+    assert.equal(event.healthDamage, event.amount);
+    assert.ok(Math.abs(event.x - enemy.x) <= enemy.speed / 60);
+    assert.ok(Math.abs(event.y - enemy.y) <= enemy.speed / 60);
+});
+
+test("melee event reports shield absorption and clears next frame", () => {
+    const simulation = new BattleSimulation(createHospitalDistrictMap());
+    const enemy = simulation.enemies[0];
+    const attackRange = enemy.radius + simulation.player.radius + simulation.meleeAttackMargin;
+    enemy.x = simulation.player.x + attackRange - 1;
+    enemy.y = simulation.player.y;
+
+    simulation.update(1 / 60);
+    const event = simulation.hitEvents.find((candidate) => candidate.kind === "melee");
+    assert.ok(event);
+    assert.equal(event.targetId, "player");
+    assert.ok(event.shieldDamage > 0);
+    assert.equal(event.healthDamage, 0);
+    assert.equal(event.amount, event.shieldDamage);
+    const eventId = event.id;
+
+    simulation.update(1 / 60);
+    assert.equal(simulation.hitEvents.some((candidate) => candidate.id === eventId), false);
+});
+
+test("lethal projectile marks its hit event as a zero transition", () => {
+    const simulation = new BattleSimulation(createHospitalDistrictMap());
+    const enemy = simulation.enemies[0];
+    enemy.vitality.currentHealth = 1;
+    enemy.x = simulation.player.x + 120;
+    enemy.y = simulation.player.y;
+
+    for (let index = 0; index < 30 && simulation.hitEvents.length === 0; index++) {
+        simulation.update(1 / 60);
+    }
+
+    assert.equal(simulation.hitEvents[0].becameZero, true);
+    assert.equal(enemy.vitality.state, "dead");
+});
