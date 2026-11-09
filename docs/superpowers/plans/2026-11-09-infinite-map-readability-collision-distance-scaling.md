@@ -8,6 +8,8 @@
 
 **Tech Stack:** TypeScript, Cocos Creator 3.8.8, Node 24 native TypeScript test execution, `node:test`, existing oops-game-kit UI helpers.
 
+**Implementation status (2026-11-09):** Complete in the current workspace. `npm run test:battle` passes 160/160, `npm run test:ui` passes 167/167, and `git diff --check` passes. Feature TypeScript files report no errors; the project-wide compiler still reports pre-existing extension errors involving JSZip, Node default imports, and `Logger.logNet`. The Cocos Creator six-boundary manual smoke test remains pending.
+
 ## Global Constraints
 
 - Keep the existing Cocos Creator 3.8.8 project and current pixel-art assets.
@@ -33,7 +35,7 @@
 - Produces: `chunkArtTemplate(backgroundId, roads): { roadCells: readonly LocalCell[]; solidCells: readonly LocalCell[] }`.
 - Produces: `InfiniteChunkDefinition.solidCells: readonly LocalCell[]`.
 
-- [ ] **Step 1: Write failing template tests**
+- [x] **Step 1: Write failing template tests**
 
 ```js
 test("residential art exposes its visible center and perimeter streets", () => {
@@ -57,13 +59,13 @@ test("hospital median blockers are removed from the road mask", () => {
 });
 ```
 
-- [ ] **Step 2: Run tests and verify RED**
+- [x] **Step 2: Run tests and verify RED**
 
 Run: `node --test tests/unit/world/InfiniteChunkTemplate.test.mjs`
 
 Expected: FAIL because `InfiniteChunkTemplate.ts` does not exist.
 
-- [ ] **Step 3: Implement deterministic templates**
+- [x] **Step 3: Implement deterministic templates**
 
 ```ts
 export interface ChunkArtTemplate {
@@ -82,17 +84,17 @@ export function chunkArtTemplate(
 
 Residential/commercial templates use the visible center cross and enabled perimeter lanes. Hospital uses its lower horizontal route, center vertical route, enabled perimeter lanes, and declared median/rubble blockers while retaining at least one lane around each blocker.
 
-- [ ] **Step 4: Integrate templates into chunk generation**
+- [x] **Step 4: Integrate templates into chunk generation**
 
 Replace `createRoadCells(roads)` with `chunkArtTemplate(background, roads)` after `backgroundId` is known. Add `solidCells` to the returned chunk definition. Keep all choices seeded and independent of runtime order.
 
-- [ ] **Step 5: Verify template and generator tests GREEN**
+- [x] **Step 5: Verify template and generator tests GREEN**
 
 Run: `node --test tests/unit/world/InfiniteChunkTemplate.test.mjs tests/unit/world/InfiniteChunkGenerator.test.mjs`
 
 Expected: all tests pass, including shared-edge and connectivity seed sweeps.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```powershell
 git add assets/script/game/world/infinite/InfiniteChunkTemplate.ts assets/script/game/world/infinite/InfiniteChunkTemplate.ts.meta assets/script/game/world/infinite/InfiniteChunkGenerator.ts tests/unit/world/InfiniteChunkTemplate.test.mjs tests/unit/world/InfiniteChunkGenerator.test.mjs
@@ -116,7 +118,7 @@ git commit -m "fix: align infinite chunk navigation with art"
 - Produces: `BattleMapDefinition.enemyHealthMultiplier?(cell: GridPoint): number`.
 - Consumes: generated `roadCells`, `solidCells`, landmark/interactable cells, and chunk coordinate.
 
-- [ ] **Step 1: Write failing distance-band tests**
+- [x] **Step 1: Write failing distance-band tests**
 
 ```js
 test("enemy count increases through the four Ark distance bands", () => {
@@ -133,13 +135,13 @@ test("health grows monotonically and caps at three times base", () => {
 });
 ```
 
-- [ ] **Step 2: Run tests and verify RED**
+- [x] **Step 2: Run tests and verify RED**
 
 Run: `node --test tests/unit/world/InfiniteEncounterScaling.test.mjs`
 
 Expected: FAIL because the module does not exist.
 
-- [ ] **Step 3: Implement the pure encounter profile**
+- [x] **Step 3: Implement the pure encounter profile**
 
 ```ts
 export function encounterProfileForChunk(coordinate: ChunkCoordinate): InfiniteEncounterProfile {
@@ -149,27 +151,27 @@ export function encounterProfileForChunk(coordinate: ChunkCoordinate): InfiniteE
 }
 ```
 
-- [ ] **Step 4: Write failing map spawn tests**
+- [x] **Step 4: Write failing map spawn tests**
 
 Assert that active chunks at each distance expose exactly the profile count, all spawn cells are unique and walkable, repeated construction returns identical cells, and `enemyHealthMultiplier(cell)` returns the owning chunk multiplier.
 
-- [ ] **Step 5: Run map tests and verify RED**
+- [x] **Step 5: Run map tests and verify RED**
 
 Run: `node --test tests/unit/battle/InfiniteBattleMap.test.mjs`
 
 Expected: FAIL because every chunk currently contributes one fixed spawn and the map has no multiplier API.
 
-- [ ] **Step 6: Implement safe deterministic spawn selection**
+- [x] **Step 6: Implement safe deterministic spawn selection**
 
 In `contentForChunks`, keep `{x:11,y:4}` as the preferred legacy slot when it is walkable. Fill remaining slots from a seeded, sorted road-cell candidate list after excluding portals, loot, exploration cells, solid cells, and duplicate cells. Emit fewer spawns if no valid candidate remains. Add `enemyHealthMultiplier(cell)` by converting the cell to its chunk coordinate and calling `encounterProfileForChunk`.
 
-- [ ] **Step 7: Verify encounter and map tests GREEN**
+- [x] **Step 7: Verify encounter and map tests GREEN**
 
 Run: `node --test tests/unit/world/InfiniteEncounterScaling.test.mjs tests/unit/battle/InfiniteBattleMap.test.mjs`
 
 Expected: all tests pass.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```powershell
 git add assets/script/game/world/infinite/InfiniteEncounterScaling.ts assets/script/game/world/infinite/InfiniteEncounterScaling.ts.meta assets/script/game/battle/BattleMapModel.ts assets/script/game/battle/InfiniteBattleMap.ts tests/unit/world/InfiniteEncounterScaling.test.mjs tests/unit/battle/InfiniteBattleMap.test.mjs
@@ -188,7 +190,7 @@ git commit -m "feat: scale exploration encounters from the Ark"
 - Consumes: `BattleMapDefinition.enemyHealthMultiplier?(cell)`.
 - Preserves: stable ID `chunk-enemy:${spawn.x}:${spawn.y}` and existing destroyed deltas.
 
-- [ ] **Step 1: Write failing simulation tests**
+- [x] **Step 1: Write failing simulation tests**
 
 ```js
 test("streamed enemy health scales from its chunk while combat stats stay fixed", () => {
@@ -202,23 +204,23 @@ test("streamed enemy health scales from its chunk while combat stats stay fixed"
 
 Also retain the existing recycle test and extend it so a defeated far-chunk enemy remains absent after leaving and returning.
 
-- [ ] **Step 2: Run tests and verify RED**
+- [x] **Step 2: Run tests and verify RED**
 
 Run: `node --test tests/unit/battle/InfiniteBattleSimulation.test.mjs`
 
 Expected: FAIL because `createEnemy` always uses base health.
 
-- [ ] **Step 3: Pass health multiplier into enemy construction**
+- [x] **Step 3: Pass health multiplier into enemy construction**
 
 Change `createEnemy` to accept `healthMultiplier = 1`, sanitize it to `[1, 3]`, and construct vitality with `combat.health * multiplier`. Both constructor and streamed refresh derive the multiplier from the spawn cell. Horde/night-defense calls retain the default multiplier.
 
-- [ ] **Step 4: Verify simulation tests GREEN**
+- [x] **Step 4: Verify simulation tests GREEN**
 
 Run: `node --test tests/unit/battle/InfiniteBattleSimulation.test.mjs tests/unit/battle/NightDefenseSimulation.test.mjs`
 
 Expected: distance scaling and night-defense regressions pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
 git add assets/script/game/battle/BattleSimulation.ts tests/unit/battle/InfiniteBattleSimulation.test.mjs
@@ -244,35 +246,37 @@ git commit -m "feat: scale streamed enemy health by distance"
 - Produces: `districtPresentation(district, hasHospital): { label: string; accent: readonly [number, number, number, number]; tint: readonly [number, number, number, number] }`.
 - Produces: `PLAYER_PRESENTATION_SIZE`, `PLAYER_COLLISION_RADIUS`, `enemyPresentation(kind)`.
 
-- [ ] **Step 1: Write failing pure presentation tests**
+- [x] **Step 1: Write failing pure presentation tests**
 
 Assert all district labels and accents are distinct, hospital overrides the district label, player size is 104, ordinary enemies are at most 90, brute is 118, and collision radii match 22/18/18/20/28.
 
-- [ ] **Step 2: Run tests and verify RED**
+- [x] **Step 2: Run tests and verify RED**
 
 Run: `node --test tests/unit/battle/InfiniteDistrictPresentation.test.mjs tests/unit/battle/BattleActorPresentation.test.mjs`
 
 Expected: FAIL because the modules do not exist.
 
-- [ ] **Step 3: Implement pure presentation modules**
+- [x] **Step 3: Implement pure presentation modules**
 
 Use numeric RGBA tuples so Node tests do not import Cocos. Export actor assets, sizes, collision radii, and health-bar widths from one module consumed by both simulation and HUD.
 
-- [ ] **Step 4: Integrate actor sizes and radii**
+- [x] **Step 4: Integrate actor sizes and radii**
 
 Replace the HUD-local enemy size table and hardcoded player size with `BattleActorPresentation`. Replace simulation player/enemy radii with the same module's collision metrics. Scale health-bar widths and vertical offsets from each actor presentation.
 
-- [ ] **Step 5: Integrate pooled district presentation**
+- [x] **Step 5: Integrate pooled district presentation**
 
 Add `refreshDistrictPresentation(node, chunk)` to create/update a translucent border, corner label plate, and label. Call it for new, reused, and already-active chunk nodes. Convert tuple colors to Cocos `Color` only inside `BattleHUDViewComp`. Expand closed-edge barriers across the full relevant chunk edge so art and collision communicate the same boundary.
 
-- [ ] **Step 6: Verify presentation and UI binding tests GREEN**
+- [x] **Step 6: Verify presentation and UI binding tests GREEN**
 
 Run: `node --test tests/unit/battle/InfiniteDistrictPresentation.test.mjs tests/unit/battle/BattleActorPresentation.test.mjs tests/integration/ui/InfiniteWorldViewBindings.test.mjs`
 
 Expected: all tests pass.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
+
+The pure presentation modules, actor collision integration, and tests were committed in `064e206`. `BattleHUDViewComp.ts` remains in the working tree because it already contains unrelated equipment/intel presentation work; the district overlay hunks were not committed separately to avoid capturing those changes.
 
 ```powershell
 git add assets/script/game/battle/InfiniteDistrictPresentation.ts assets/script/game/battle/InfiniteDistrictPresentation.ts.meta assets/script/game/battle/BattleActorPresentation.ts assets/script/game/battle/BattleActorPresentation.ts.meta assets/script/game/battle/BattleHUDViewComp.ts assets/script/game/battle/BattleSimulation.ts tests/unit/battle/InfiniteDistrictPresentation.test.mjs tests/unit/battle/BattleActorPresentation.test.mjs tests/integration/ui/InfiniteWorldViewBindings.test.mjs
@@ -291,7 +295,7 @@ git commit -m "feat: improve infinite district and actor readability"
 - Consumes all preceding task outputs.
 - Produces verification evidence and editor smoke-test instructions.
 
-- [ ] **Step 1: Run focused world and battle tests**
+- [x] **Step 1: Run focused world and battle tests**
 
 Run:
 
@@ -299,7 +303,7 @@ Run:
 node --test tests/unit/world/InfiniteChunkTemplate.test.mjs tests/unit/world/InfiniteEncounterScaling.test.mjs tests/unit/world/InfiniteChunkGenerator.test.mjs tests/unit/battle/InfiniteBattleMap.test.mjs tests/unit/battle/InfiniteBattleSimulation.test.mjs tests/unit/battle/InfiniteDistrictPresentation.test.mjs tests/unit/battle/BattleActorPresentation.test.mjs
 ```
 
-- [ ] **Step 2: Run full regression suites**
+- [x] **Step 2: Run full regression suites**
 
 Run: `npm run test:battle`
 
@@ -307,21 +311,21 @@ Run: `npm run test:ui`
 
 Expected: zero failures.
 
-- [ ] **Step 3: Run feature TypeScript validation**
+- [x] **Step 3: Run feature TypeScript validation**
 
 Run the Cocos Creator bundled TypeScript compiler with `--noEmit -p tsconfig.json --skipLibCheck`. Separate known extension errors from any error under `assets/script/game/battle` or `assets/script/game/world/infinite`; feature files must report no errors.
 
-- [ ] **Step 4: Run diff validation**
+- [x] **Step 4: Run diff validation**
 
 Run: `git diff --check`
 
 Expected: exit code 0. Existing line-ending warnings may remain, but no whitespace errors.
 
-- [ ] **Step 5: Document behavior and manual smoke test**
+- [x] **Step 5: Document behavior and manual smoke test**
 
 Update README with district colors, art-aligned streets, actor scale, and distance bands. Record automated counts and leave the six-boundary Cocos Creator smoke test explicitly pending unless it was actually performed.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```powershell
 git add README.md docs/superpowers/plans/2026-11-09-infinite-map-readability-collision-distance-scaling.md
