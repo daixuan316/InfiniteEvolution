@@ -5,6 +5,7 @@ import {
     type ChunkDirection,
 } from "./InfiniteWorldTypes.ts";
 import { SeededRandom, chunkKey, deriveSeed } from "./WorldSeed.ts";
+import { chunkArtTemplate, type ChunkBackgroundId } from "./InfiniteChunkTemplate.ts";
 
 export type DistrictKind = "residential" | "community" | "industrial" | "open-space";
 export type BuildingLotKind = "residential" | "commercial" | "industrial" | "open" | "landmark";
@@ -43,58 +44,57 @@ export interface InfiniteChunkDefinition {
     readonly district: DistrictKind;
     readonly roads: ChunkRoadConnections;
     readonly roadCells: readonly LocalCell[];
+    readonly solidCells: readonly LocalCell[];
     readonly buildingLots: readonly BuildingLotDefinition[];
     readonly landmarks: readonly ChunkLandmarkDefinition[];
-    readonly backgroundId: "residential-district-a" | "residential-district-b" | "neighborhood-commercial-a" | "hospital-district";
+    readonly backgroundId: ChunkBackgroundId;
 }
 
 const LOTS: ReadonlyArray<Pick<BuildingLotDefinition, "id" | "cell" | "width" | "height">> = [
-    { id: "lot:1:0", cell: { x: 1, y: 0 }, width: 4, height: 3 },
-    { id: "lot:9:0", cell: { x: 9, y: 0 }, width: 4, height: 3 },
-    { id: "lot:1:5", cell: { x: 1, y: 5 }, width: 4, height: 3 },
-    { id: "lot:9:5", cell: { x: 9, y: 5 }, width: 4, height: 3 },
+    { id: "lot:1:1", cell: { x: 1, y: 1 }, width: 4, height: 2 },
+    { id: "lot:9:1", cell: { x: 9, y: 1 }, width: 4, height: 2 },
+    { id: "lot:1:5", cell: { x: 1, y: 5 }, width: 4, height: 2 },
+    { id: "lot:9:5", cell: { x: 9, y: 5 }, width: 4, height: 2 },
 ];
 
 function positiveModulo(value: number, modulus: number): number {
     return ((value % modulus) + modulus) % modulus;
 }
 
+function parentDirection(worldSeed: number, coordinate: ChunkCoordinate): ChunkDirection {
+    if (coordinate.x !== 0 && coordinate.y !== 0) {
+        const reduceHorizontal = new SeededRandom(deriveSeed(worldSeed, coordinate, "road-parent")).next() < 0.5;
+        if (reduceHorizontal) return coordinate.x > 0 ? "west" : "east";
+        return coordinate.y > 0 ? "south" : "north";
+    }
+    if (coordinate.x > 0) return "west";
+    if (coordinate.x < 0) return "east";
+    if (coordinate.y > 0) return "south";
+    if (coordinate.y < 0) return "north";
+    return "east";
+}
+
+function horizontalEdgeOpen(worldSeed: number, leftChunk: ChunkCoordinate): boolean {
+    const rightChunk = { x: leftChunk.x + 1, y: leftChunk.y };
+    return parentDirection(worldSeed, leftChunk) === "east"
+        || parentDirection(worldSeed, rightChunk) === "west"
+        || new SeededRandom(deriveSeed(worldSeed, leftChunk, "road-edge-x")).next() < 0.42;
+}
+
 function verticalEdgeOpen(worldSeed: number, lowerChunk: ChunkCoordinate): boolean {
-    return new SeededRandom(deriveSeed(worldSeed, lowerChunk, "road-edge-y")).next() < 0.58;
+    const upperChunk = { x: lowerChunk.x, y: lowerChunk.y + 1 };
+    return parentDirection(worldSeed, lowerChunk) === "north"
+        || parentDirection(worldSeed, upperChunk) === "south"
+        || new SeededRandom(deriveSeed(worldSeed, lowerChunk, "road-edge-y")).next() < 0.42;
 }
 
 function roadConnections(worldSeed: number, coordinate: ChunkCoordinate): ChunkRoadConnections {
     return {
         north: verticalEdgeOpen(worldSeed, coordinate),
-        east: true,
+        east: horizontalEdgeOpen(worldSeed, coordinate),
         south: verticalEdgeOpen(worldSeed, { x: coordinate.x, y: coordinate.y - 1 }),
-        west: true,
+        west: horizontalEdgeOpen(worldSeed, { x: coordinate.x - 1, y: coordinate.y }),
     };
-}
-
-function createRoadCells(roads: ChunkRoadConnections): LocalCell[] {
-    const cells = new Map<string, LocalCell>();
-    const add = (x: number, y: number): void => {
-        cells.set(`${x}:${y}`, { x, y });
-    };
-
-    for (let x = 0; x < CHUNK_COLUMNS; x++) {
-        add(x, 3);
-        add(x, 4);
-    }
-    if (roads.south) {
-        for (let y = 0; y <= 4; y++) {
-            add(6, y);
-            add(7, y);
-        }
-    }
-    if (roads.north) {
-        for (let y = 3; y < CHUNK_ROWS; y++) {
-            add(6, y);
-            add(7, y);
-        }
-    }
-    return [...cells.values()].sort((left, right) => left.y - right.y || left.x - right.x);
 }
 
 function districtKind(worldSeed: number, coordinate: ChunkCoordinate): DistrictKind {
@@ -156,6 +156,8 @@ export function generateInfiniteChunk(worldSeed: number, coordinate: ChunkCoordi
     const roads = roadConnections(worldSeed, coordinate);
     const random = new SeededRandom(deriveSeed(worldSeed, coordinate, "building-lots"));
     const hasHospital = isRareLandmarkAnchor(worldSeed, coordinate, "hospital");
+    const background = backgroundId(district, coordinate, worldSeed, hasHospital);
+    const artTemplate = chunkArtTemplate(background, roads);
     const buildingLots = LOTS.map((lot, index): BuildingLotDefinition => ({
         ...lot,
         kind: hasHospital && index === 0 ? "landmark" : lotKind(random, district),
@@ -172,10 +174,11 @@ export function generateInfiniteChunk(worldSeed: number, coordinate: ChunkCoordi
         coordinate: { x: coordinate.x, y: coordinate.y },
         district,
         roads,
-        roadCells: createRoadCells(roads),
+        roadCells: artTemplate.roadCells,
+        solidCells: artTemplate.solidCells,
         buildingLots,
         landmarks,
-        backgroundId: backgroundId(district, coordinate, worldSeed, hasHospital),
+        backgroundId: background,
     };
 }
 

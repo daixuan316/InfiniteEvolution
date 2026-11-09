@@ -28,6 +28,23 @@ test("neighboring chunks independently agree on shared road exits", () => {
     }
 });
 
+test("shared road edges produce deterministic open and closed connector variants", () => {
+    let openNorth = 0;
+    let closedNorth = 0;
+    const exitCounts = new Set();
+    for (let y = -12; y <= 12; y++) {
+        for (let x = -12; x <= 12; x++) {
+            const roads = generateInfiniteChunk(WORLD_SEED, { x, y }).roads;
+            exitCounts.add(Object.values(roads).filter(Boolean).length);
+            if (roads.north) openNorth++;
+            else closedNorth++;
+        }
+    }
+    assert.ok(openNorth > 0);
+    assert.ok(closedNorth > 0);
+    assert.deepEqual([...exitCounts].sort(), [1, 2, 3, 4]);
+});
+
 test("road cells connect every enabled portal through the chunk center", () => {
     const chunk = generateInfiniteChunk(WORLD_SEED, { x: 3, y: -6 });
     const roadKeys = new Set(chunk.roadCells.map((cell) => `${cell.x}:${cell.y}`));
@@ -38,6 +55,8 @@ test("road cells connect every enabled portal through the chunk center", () => {
     if (chunk.roads.north) portals.push({ x: 6, y: 7 });
     for (const portal of portals) assert.equal(roadKeys.has(`${portal.x}:${portal.y}`), true);
     assert.equal(roadKeys.has("6:3"), true);
+    if (!chunk.roads.south) assert.equal(roadKeys.has("6:0"), false);
+    if (!chunk.roads.north) assert.equal(roadKeys.has("6:7"), false);
 });
 
 test("ten thousand chunks keep residential lots dominant", () => {
