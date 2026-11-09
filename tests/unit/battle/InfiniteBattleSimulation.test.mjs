@@ -116,11 +116,28 @@ test("streamed enemies use coordinate-stable ids and do not respawn on same-wind
     assert.ok(initialIds.every((id) => id.startsWith("chunk-enemy:")));
 });
 
+test("undefeated streamed enemies keep their seeded kind after recycling", () => {
+    const map = createInfiniteExplorationMap({ worldSeed: 1907 });
+    const simulation = new BattleSimulation(map);
+    const initialKinds = new Map(simulation.enemies.map((enemy) => [enemy.id, enemy.kind]));
+
+    simulation.player.x += 1344 * 4;
+    simulation.update(0);
+    simulation.player.x = map.cellToWorld(map.start).x;
+    simulation.update(0);
+
+    for (const enemy of simulation.enemies) {
+        assert.equal(enemy.kind, initialKinds.get(enemy.id), enemy.id);
+    }
+});
+
 test("streamed enemy health scales from its chunk while combat stats stay fixed", () => {
-    const near = simulationAtChunk(0, 0).enemies[0];
-    const far = simulationAtChunk(8, 0).enemies[0];
-    assert.equal(near.kind, "walker");
-    assert.equal(far.kind, "walker");
+    const nearEnemies = simulationAtChunk(0, 0).enemies;
+    const farEnemies = simulationAtChunk(8, 0).enemies;
+    const near = nearEnemies.find((candidate) => farEnemies.some((enemy) => enemy.kind === candidate.kind));
+    assert.ok(near);
+    const far = farEnemies.find((candidate) => candidate.kind === near.kind);
+    assert.ok(far);
     assert.ok(far.vitality.maxHealth > near.vitality.maxHealth);
     assert.ok(far.vitality.maxHealth <= near.vitality.maxHealth * 3);
     assert.equal(far.attackDamage, near.attackDamage);
@@ -131,10 +148,8 @@ test("streamed enemy health scales from its chunk while combat stats stay fixed"
 test("exploration actors use compact collision radii for two-cell streets", () => {
     const simulation = simulationAtChunk(0, 0);
     assert.equal(simulation.player.radius, 22);
-    assert.equal(simulation.enemies.find((enemy) => enemy.kind === "walker")?.radius, 18);
-    assert.equal(simulation.enemies.find((enemy) => enemy.kind === "runner")?.radius, 18);
-    assert.equal(simulation.enemies.find((enemy) => enemy.kind === "mutant")?.radius, 20);
-    assert.equal(simulation.enemies.find((enemy) => enemy.kind === "brute")?.radius, 28);
+    const expectedRadius = { walker: 18, runner: 18, mutant: 20, brute: 28 };
+    for (const enemy of simulation.enemies) assert.equal(enemy.radius, expectedRadius[enemy.kind]);
 });
 
 test("defeated streamed enemies stay cleared after leaving and revisiting a chunk", () => {

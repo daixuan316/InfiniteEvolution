@@ -34,12 +34,14 @@ test("closed chunk edges are not traversable", () => {
 test("hospital median blockers are removed from the road mask", () => {
     const template = chunkArtTemplate("hospital-district", OPEN_ROADS);
     assert.deepEqual(template.solidCells, [
-        { x: 2, y: 3 },
-        { x: 3, y: 3 },
-        { x: 9, y: 4 },
-        { x: 10, y: 4 },
+        { x: 2, y: 2 },
+        { x: 3, y: 2 },
+        { x: 9, y: 2 },
+        { x: 10, y: 2 },
     ]);
     assert.equal(template.solidCells.every((solid) => !hasCell(template.roadCells, solid.x, solid.y)), true);
-    assert.equal(hasCell(template.roadCells, 2, 4), true);
+    assert.equal(hasCell(template.roadCells, 2, 3), true);
     assert.equal(hasCell(template.roadCells, 9, 3), true);
+    assert.equal(hasCell(template.roadCells, 4, 2), true);
+    assert.equal(hasCell(template.roadCells, 4, 4), false);
 });

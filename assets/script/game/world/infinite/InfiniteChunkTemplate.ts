@@ -13,10 +13,10 @@ export interface ChunkArtTemplate {
 }
 
 const HOSPITAL_SOLID_CELLS: readonly LocalCell[] = [
-    { x: 2, y: 3 },
-    { x: 3, y: 3 },
-    { x: 9, y: 4 },
-    { x: 10, y: 4 },
+    { x: 2, y: 2 },
+    { x: 3, y: 2 },
+    { x: 9, y: 2 },
+    { x: 10, y: 2 },
 ];
 
 function cellKey(cell: LocalCell): string {
@@ -31,9 +31,9 @@ export function chunkArtTemplate(backgroundId: ChunkBackgroundId, roads: ChunkRo
         cells.set(cellKey(cell), cell);
     };
 
+    const horizontalRows = backgroundId === "hospital-district" ? [2, 3] : [3, 4];
     for (let x = 1; x < CHUNK_COLUMNS - 1; x++) {
-        add(x, 3);
-        add(x, 4);
+        for (const y of horizontalRows) add(x, y);
     }
     for (let y = 1; y < CHUNK_ROWS - 1; y++) {
         add(6, y);

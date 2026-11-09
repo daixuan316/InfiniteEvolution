@@ -158,11 +158,14 @@ export function generateInfiniteChunk(worldSeed: number, coordinate: ChunkCoordi
     const hasHospital = isRareLandmarkAnchor(worldSeed, coordinate, "hospital");
     const background = backgroundId(district, coordinate, worldSeed, hasHospital);
     const artTemplate = chunkArtTemplate(background, roads);
-    const buildingLots = LOTS.map((lot, index): BuildingLotDefinition => ({
-        ...lot,
-        kind: hasHospital && index === 0 ? "landmark" : lotKind(random, district),
-        variant: random.int(0, 3),
-    }));
+    const buildingLots = LOTS.map((lot, index): BuildingLotDefinition => {
+        const fittedLot = hasHospital && lot.cell.y === 1 ? { ...lot, height: 1 } : lot;
+        return {
+            ...fittedLot,
+            kind: hasHospital && index === 0 ? "landmark" : lotKind(random, district),
+            variant: random.int(0, 3),
+        };
+    });
     const landmarks: ChunkLandmarkDefinition[] = hasHospital ? [{
         id: `hospital:${key}`,
         kind: "hospital",

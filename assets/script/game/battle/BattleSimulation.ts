@@ -171,6 +171,11 @@ function distance(a: WorldPoint, b: WorldPoint): number {
     return Math.hypot(a.x - b.x, a.y - b.y);
 }
 
+function enemyKindForSpawn(spawn: GridPoint): EnemyKind {
+    const kindIndex = Math.abs(Math.imul(spawn.x, 31) + Math.imul(spawn.y, 17)) % INITIAL_ENEMY_KINDS.length;
+    return INITIAL_ENEMY_KINDS[kindIndex];
+}
+
 function normalize(x: number, y: number): WorldPoint {
     const length = Math.hypot(x, y);
     return length > 1 ? { x: x / length, y: y / length } : { x, y };
@@ -326,7 +331,7 @@ export class BattleSimulation {
             const stableId = map.infinite ? `chunk-enemy:${spawn.x}:${spawn.y}` : undefined;
             if (stableId && map.readObjectDelta?.(spawn, stableId)?.destroyed) return [];
             return [this.createEnemy(
-                INITIAL_ENEMY_KINDS[index] ?? "walker",
+                enemyKindForSpawn(spawn),
                 map.cellToWorld(spawn),
                 index * 0.12,
                 stableId,
@@ -639,9 +644,8 @@ export class BattleSimulation {
                     nextEnemies.push(existing);
                     return;
                 }
-                const kindIndex = Math.abs(Math.imul(spawn.x, 31) + Math.imul(spawn.y, 17)) % INITIAL_ENEMY_KINDS.length;
                 nextEnemies.push(this.createEnemy(
-                    INITIAL_ENEMY_KINDS[kindIndex],
+                    enemyKindForSpawn(spawn),
                     this.map.cellToWorld(spawn),
                     index * 0.04,
                     id,

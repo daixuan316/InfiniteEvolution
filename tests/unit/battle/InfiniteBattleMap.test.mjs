@@ -61,8 +61,9 @@ test("visible hospital median cells block movement while the adjacent lane remai
     const map = createInfiniteExplorationMap({ worldSeed: 1907 });
     const hospitalY = 2 * CHUNK_ROWS;
     assert.equal(map.getChunkAt({ x: 0, y: 2 }).backgroundId, "hospital-district");
-    assert.equal(map.isWalkable({ x: 2, y: hospitalY + 3 }), false);
-    assert.equal(map.isWalkable({ x: 2, y: hospitalY + 4 }), true);
+    assert.equal(map.isWalkable({ x: 2, y: hospitalY + 2 }), false);
+    assert.equal(map.isWalkable({ x: 2, y: hospitalY + 3 }), true);
+    assert.equal(map.isWalkable({ x: 4, y: hospitalY + 4 }), false);
 });
 
 test("active chunks expose deterministic walkable enemy counts for their Ark distance", () => {
