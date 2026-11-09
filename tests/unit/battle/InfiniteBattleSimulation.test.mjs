@@ -128,6 +128,15 @@ test("streamed enemy health scales from its chunk while combat stats stay fixed"
     assert.equal(far.defense, near.defense);
 });
 
+test("exploration actors use compact collision radii for two-cell streets", () => {
+    const simulation = simulationAtChunk(0, 0);
+    assert.equal(simulation.player.radius, 22);
+    assert.equal(simulation.enemies.find((enemy) => enemy.kind === "walker")?.radius, 18);
+    assert.equal(simulation.enemies.find((enemy) => enemy.kind === "runner")?.radius, 18);
+    assert.equal(simulation.enemies.find((enemy) => enemy.kind === "mutant")?.radius, 20);
+    assert.equal(simulation.enemies.find((enemy) => enemy.kind === "brute")?.radius, 28);
+});
+
 test("defeated streamed enemies stay cleared after leaving and revisiting a chunk", () => {
     const map = createInfiniteExplorationMap({ worldSeed: 1907 });
     const simulation = new BattleSimulation(map);

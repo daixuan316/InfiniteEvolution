@@ -19,6 +19,7 @@ import {
     DEFAULT_BATTLE_PLAYER_MODIFIERS,
     type BattlePlayerModifiers,
 } from "../research/model/ResearchTypes.ts";
+import { PLAYER_COLLISION_RADIUS, enemyActorPresentation } from "./BattleActorPresentation.ts";
 
 export interface CombatTarget extends WorldPoint {
     readonly id: string;
@@ -158,13 +159,12 @@ const ENEMY_COMBAT: Readonly<Record<EnemyKind, {
     readonly defense: number;
     readonly damage: number;
     readonly interval: number;
-    readonly radius: number;
     readonly speed: number;
 }>> = {
-    walker: { health: 90, defense: 5, damage: 18, interval: 1, radius: 25, speed: 92 },
-    runner: { health: 70, defense: 0, damage: 12, interval: 0.55, radius: 25, speed: 100 },
-    mutant: { health: 130, defense: 12, damage: 24, interval: 1.1, radius: 25, speed: 108 },
-    brute: { health: 360, defense: 25, damage: 42, interval: 1.4, radius: 36, speed: 116 },
+    walker: { health: 90, defense: 5, damage: 18, interval: 1, speed: 92 },
+    runner: { health: 70, defense: 0, damage: 12, interval: 0.55, speed: 100 },
+    mutant: { health: 130, defense: 12, damage: 24, interval: 1.1, speed: 108 },
+    brute: { health: 360, defense: 25, damage: 42, interval: 1.4, speed: 116 },
 };
 
 function distance(a: WorldPoint, b: WorldPoint): number {
@@ -227,7 +227,7 @@ function defaultEquipmentSnapshot(): RoleCombatSnapshot {
 
 export class BattleSimulation {
     readonly map: BattleMapDefinition;
-    readonly playerRadius = 28;
+    readonly playerRadius = PLAYER_COLLISION_RADIUS;
     /** Movement speed multiplier while sprinting; also drives walk animation speed. */
     readonly sprintMultiplier = 1.55;
     /** Weapon reach for the player's auto-fire state, in world units. */
@@ -683,6 +683,7 @@ export class BattleSimulation {
 
     private createEnemy(kind: EnemyKind, position: WorldPoint, repathIn: number, stableId?: string, healthMultiplier = 1): EnemyAgent {
         const combat = ENEMY_COMBAT[kind];
+        const presentation = enemyActorPresentation(kind);
         const normalizedHealthMultiplier = Number.isFinite(healthMultiplier)
             ? Math.max(1, Math.min(3, healthMultiplier))
             : 1;
@@ -690,7 +691,7 @@ export class BattleSimulation {
             id: stableId ?? `enemy-${this.nextEnemyId++}`,
             kind,
             ...position,
-            radius: combat.radius,
+            radius: presentation.collisionRadius,
             speed: combat.speed,
             defense: combat.defense,
             vitality: new VitalityRuntime({ maxHealth: combat.health * normalizedHealthMultiplier, zeroState: "dead" }),
