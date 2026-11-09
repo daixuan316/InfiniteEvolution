@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript, Cocos Creator 3.8.8, Node 24 native TypeScript test execution, `node:test`, existing oops-game-kit UI helpers.
 
-**Implementation status (2026-11-09):** Complete in the current workspace. `npm run test:battle` passes 162/162, `npm run test:ui` passes 169/169, and `git diff --check` passes. Feature TypeScript files report no errors; the project-wide compiler still reports pre-existing extension errors involving JSZip, Node default imports, and `Logger.logNet`. The Cocos Creator six-boundary manual smoke test remains pending. Final review fixes added a hospital-specific lower road, stable coordinate-derived monster kinds, and two-phase budgeted enemy-node reconciliation.
+**Implementation status (2026-11-10):** Complete in the current workspace. `npm run test:battle` passes 163/163, `npm run test:ui` passes 170/170, and `git diff --check` passes. Feature TypeScript files report no errors; the project-wide compiler still reports pre-existing extension errors involving JSZip, Node default imports, and `Logger.logNet`. The Cocos Creator six-boundary manual smoke test remains pending. Final review fixes added a hospital-specific lower road, stable coordinate-derived monster kinds, two-phase budgeted enemy-node reconciliation, and preservation of the finite hospital map's authored enemy composition. Independent review found no remaining Critical or Important issues.
 
 ## Global Constraints
 

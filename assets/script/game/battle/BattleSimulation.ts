@@ -331,7 +331,7 @@ export class BattleSimulation {
             const stableId = map.infinite ? `chunk-enemy:${spawn.x}:${spawn.y}` : undefined;
             if (stableId && map.readObjectDelta?.(spawn, stableId)?.destroyed) return [];
             return [this.createEnemy(
-                enemyKindForSpawn(spawn),
+                map.infinite ? enemyKindForSpawn(spawn) : INITIAL_ENEMY_KINDS[index] ?? "walker",
                 map.cellToWorld(spawn),
                 index * 0.12,
                 stableId,

@@ -8,6 +8,11 @@ function advance(simulation, seconds, step = 1 / 60) {
     for (let elapsed = 0; elapsed < seconds; elapsed += step) simulation.update(step);
 }
 
+test("finite hospital map keeps its authored enemy composition", () => {
+    const simulation = new BattleSimulation(createHospitalDistrictMap());
+    assert.deepEqual(simulation.enemies.map((enemy) => enemy.kind), ["walker", "runner", "mutant", "brute"]);
+});
+
 test("research modifiers change only player combat stats", () => {
     const base = new BattleSimulation(createHospitalDistrictMap());
     const upgraded = new BattleSimulation(createHospitalDistrictMap(), {
