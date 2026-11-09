@@ -20,10 +20,12 @@ import {
     CHUNK_WORLD_HEIGHT,
     CHUNK_WORLD_WIDTH,
     type ChunkCoordinate,
+    type ChunkDirection,
     type ChunkKey,
 } from "../world/infinite/InfiniteWorldTypes.ts";
 import { WorldDeltaStore } from "../world/infinite/WorldDeltaStore.ts";
-import { chunkKey, parseChunkKey } from "../world/infinite/WorldSeed.ts";
+import { encounterProfileForChunk } from "../world/infinite/InfiniteEncounterScaling.ts";
+import { SeededRandom, chunkKey, deriveSeed, parseChunkKey } from "../world/infinite/WorldSeed.ts";
 
 export interface InfiniteExplorationMapOptions {
     readonly worldSeed: number;
@@ -36,9 +38,13 @@ export interface InfiniteBattleMapDefinition extends BattleMapDefinition {
     readonly worldSeed: number;
     readonly activeChunks: readonly InfiniteChunkDefinition[];
     readonly preloadedChunks: readonly InfiniteChunkDefinition[];
+    readonly preloadGeneratedCount: number;
+    readonly renderOrigin: WorldPoint;
     readonly deltas: WorldDeltaStore;
+    advancePreload(budget?: number): boolean;
     refreshAround(point: WorldPoint): boolean;
     getChunkAt(coordinate: ChunkCoordinate): InfiniteChunkDefinition;
+    enemyHealthMultiplier(cell: GridPoint): number;
 }
 
 function positiveModulo(value: number, modulus: number): number {
@@ -59,7 +65,40 @@ function cellChunk(cell: GridPoint): ChunkCoordinate {
     };
 }
 
-function contentForChunks(chunks: readonly InfiniteChunkDefinition[]): {
+function enemySpawnCells(worldSeed: number, chunk: InfiniteChunkDefinition): GridPoint[] {
+    const profile = encounterProfileForChunk(chunk.coordinate);
+    const roadKeys = new Set(chunk.roadCells.map((cell) => `${cell.x}:${cell.y}`));
+    const reserved = new Set([
+        "2:3",
+        "7:3",
+        "10:3",
+    ]);
+    const candidates = chunk.roadCells.filter((cell) =>
+        cell.x > 0 && cell.x < CHUNK_COLUMNS - 1
+        && cell.y > 0 && cell.y < CHUNK_ROWS - 1
+        && !reserved.has(`${cell.x}:${cell.y}`));
+    const random = new SeededRandom(deriveSeed(worldSeed, chunk.coordinate, "enemy-spawns"));
+    const ordered = candidates
+        .map((cell) => ({ cell, order: random.next() }))
+        .sort((left, right) => left.order - right.order || left.cell.y - right.cell.y || left.cell.x - right.cell.x)
+        .map((entry) => entry.cell);
+    const selected: GridPoint[] = [];
+    const legacy = { x: 11, y: 4 };
+    if (roadKeys.has(`${legacy.x}:${legacy.y}`) && !reserved.has(`${legacy.x}:${legacy.y}`)) selected.push(legacy);
+    for (const candidate of ordered) {
+        if (selected.length >= profile.enemyCount) break;
+        if (selected.some((cell) => cell.x === candidate.x && cell.y === candidate.y)) continue;
+        if (selected.some((cell) => Math.hypot(cell.x - candidate.x, cell.y - candidate.y) < 2.5)) continue;
+        selected.push(candidate);
+    }
+    for (const candidate of ordered) {
+        if (selected.length >= profile.enemyCount) break;
+        if (!selected.some((cell) => cell.x === candidate.x && cell.y === candidate.y)) selected.push(candidate);
+    }
+    return selected.map((cell) => globalCell(chunk.coordinate, cell));
+}
+
+function contentForChunks(worldSeed: number, chunks: readonly InfiniteChunkDefinition[]): {
     enemySpawns: GridPoint[];
     pointsOfInterest: MapPointOfInterest[];
     loot: MapLootDefinition[];
@@ -75,7 +114,7 @@ function contentForChunks(chunks: readonly InfiniteChunkDefinition[]): {
     const barriers: MapBarrierDefinition[] = [];
 
     for (const chunk of chunks) {
-        enemySpawns.push(globalCell(chunk.coordinate, { x: 11, y: 4 }));
+        enemySpawns.push(...enemySpawnCells(worldSeed, chunk));
         const lootCell = globalCell(chunk.coordinate, { x: 2, y: 3 });
         loot.push({
             id: `${chunk.key}:loot:street-cache`,
@@ -131,7 +170,10 @@ export function createInfiniteExplorationMap(options: InfiniteExplorationMapOpti
     let activeChunks: InfiniteChunkDefinition[] = [];
     let preloadedChunks: InfiniteChunkDefinition[] = [];
     let revision = 0;
-    let content = contentForChunks([]);
+    let preloadQueue: ChunkKey[] = [];
+    let preloadGeneratedCount = 0;
+    const navigationRequested = new Set<ChunkKey>();
+    let content = contentForChunks(worldSeed, []);
     const blockedCells = new Set<string>();
 
     const getChunkAt = (coordinate: ChunkCoordinate): InfiniteChunkDefinition => {
@@ -140,12 +182,90 @@ export function createInfiniteExplorationMap(options: InfiniteExplorationMapOpti
         if (!chunk) {
             chunk = generateInfiniteChunk(worldSeed, coordinate);
             cache.set(key, chunk);
-            if (cache.size > 128) {
-                const firstKey = cache.keys().next().value as ChunkKey | undefined;
-                if (firstKey && !streaming.preloadedKeys.has(firstKey)) cache.delete(firstKey);
+            for (const candidate of cache.keys()) {
+                if (cache.size <= 128) break;
+                if (!streaming.preloadedKeys.has(candidate)) cache.delete(candidate);
             }
         }
         return chunk;
+    };
+
+    const navigationWaypoint = (start: GridPoint, goal: GridPoint): GridPoint | null => {
+        const startChunk = cellChunk(start);
+        const goalChunk = cellChunk(goal);
+        if (startChunk.x === goalChunk.x && startChunk.y === goalChunk.y) return goal;
+        const directions: ReadonlyArray<{ direction: ChunkDirection; dx: number; dy: number }> = [
+            { direction: "north", dx: 0, dy: 1 },
+            { direction: "east", dx: 1, dy: 0 },
+            { direction: "south", dx: 0, dy: -1 },
+            { direction: "west", dx: -1, dy: 0 },
+        ];
+        const margin = 16;
+        const minX = Math.min(startChunk.x, goalChunk.x) - margin;
+        const maxX = Math.max(startChunk.x, goalChunk.x) + margin;
+        const minY = Math.min(startChunk.y, goalChunk.y) - margin;
+        const maxY = Math.max(startChunk.y, goalChunk.y) + margin;
+        const startKey = chunkKey(startChunk);
+        const goalKey = chunkKey(goalChunk);
+        const queue: ChunkCoordinate[] = [startChunk];
+        const visited = new Set<ChunkKey>([startKey]);
+        const cameFrom = new Map<ChunkKey, ChunkKey>();
+        while (queue.length > 0 && visited.size <= 4_096) {
+            const current = queue.shift()!;
+            const currentKey = chunkKey(current);
+            if (currentKey === goalKey) break;
+            const roads = generateInfiniteChunk(worldSeed, current).roads;
+            for (const candidate of directions) {
+                if (!roads[candidate.direction]) continue;
+                const next = { x: current.x + candidate.dx, y: current.y + candidate.dy };
+                if (next.x < minX || next.x > maxX || next.y < minY || next.y > maxY) continue;
+                const nextKey = chunkKey(next);
+                if (visited.has(nextKey)) continue;
+                visited.add(nextKey);
+                cameFrom.set(nextKey, currentKey);
+                queue.push(next);
+            }
+        }
+        if (!visited.has(goalKey)) return null;
+        const route: ChunkKey[] = [goalKey];
+        while (route[route.length - 1] !== startKey) route.push(cameFrom.get(route[route.length - 1])!);
+        route.reverse();
+        const readyKeys = new Set(preloadedChunks.map((chunk) => chunk.key));
+        for (let index = 1; index < route.length; index++) {
+            if (readyKeys.has(route[index])) continue;
+            const requestedKey = route[index];
+            navigationRequested.add(requestedKey);
+            preloadQueue = [requestedKey, ...preloadQueue.filter((key) => key !== requestedKey)];
+            const inside = parseChunkKey(route[index - 1]);
+            const outside = parseChunkKey(route[index]);
+            if (outside.x > inside.x) return { x: (inside.x + 1) * CHUNK_COLUMNS - 1, y: inside.y * CHUNK_ROWS + 3 };
+            if (outside.x < inside.x) return { x: inside.x * CHUNK_COLUMNS, y: inside.y * CHUNK_ROWS + 3 };
+            if (outside.y > inside.y) return { x: inside.x * CHUNK_COLUMNS + 6, y: (inside.y + 1) * CHUNK_ROWS - 1 };
+            return { x: inside.x * CHUNK_COLUMNS + 6, y: inside.y * CHUNK_ROWS };
+        }
+        return goal;
+    };
+
+    const syncPreloadedChunks = (): boolean => {
+        const requestedKeys = new Set<ChunkKey>([...streaming.preloadedKeys, ...navigationRequested]);
+        const next = [...requestedKeys]
+            .filter((key) => cache.has(key))
+            .map((key) => cache.get(key)!);
+        const changed = next.length !== preloadedChunks.length;
+        preloadedChunks = next;
+        return changed;
+    };
+
+    const advancePreload = (budget = 6): boolean => {
+        let generated = 0;
+        while (preloadQueue.length > 0 && generated < Math.max(0, Math.floor(budget))) {
+            const key = preloadQueue.shift()!;
+            if ((!streaming.preloadedKeys.has(key) && !navigationRequested.has(key)) || cache.has(key)) continue;
+            getChunkAt(parseChunkKey(key));
+            generated++;
+            preloadGeneratedCount++;
+        }
+        return syncPreloadedChunks();
     };
 
     const map: InfiniteBattleMapDefinition = {
@@ -162,6 +282,8 @@ export function createInfiniteExplorationMap(options: InfiniteExplorationMapOpti
         get revision() { return revision; },
         get activeChunks() { return activeChunks; },
         get preloadedChunks() { return preloadedChunks; },
+        get preloadGeneratedCount() { return preloadGeneratedCount; },
+        get renderOrigin() { return streaming.renderOrigin; },
         get enemySpawns() { return content.enemySpawns; },
         get pointsOfInterest() { return content.pointsOfInterest; },
         get loot() { return content.loot; },
@@ -169,6 +291,24 @@ export function createInfiniteExplorationMap(options: InfiniteExplorationMapOpti
         get obstacles() { return content.obstacles; },
         get barriers() { return content.barriers; },
         getChunkAt,
+        enemyHealthMultiplier(cell: GridPoint) {
+            return encounterProfileForChunk(cellChunk(cell)).healthMultiplier;
+        },
+        advancePreload,
+        isNavigationCellReady(cell: GridPoint) {
+            const key = chunkKey(cellChunk(cell));
+            return preloadedChunks.some((chunk) => chunk.key === key);
+        },
+        navigationWaypoint,
+        navigationBounds() {
+            const coordinates = preloadedChunks.map((chunk) => chunk.coordinate);
+            return {
+                minX: Math.min(...coordinates.map((coordinate) => coordinate.x)) * CHUNK_COLUMNS - 1,
+                maxX: (Math.max(...coordinates.map((coordinate) => coordinate.x)) + 1) * CHUNK_COLUMNS,
+                minY: Math.min(...coordinates.map((coordinate) => coordinate.y)) * CHUNK_ROWS - 1,
+                maxY: (Math.max(...coordinates.map((coordinate) => coordinate.y)) + 1) * CHUNK_ROWS,
+            };
+        },
         readObjectDelta(cell: GridPoint, objectId: string) {
             return deltas.getObjectDelta(chunkKey(cellChunk(cell)), objectId);
         },
@@ -178,11 +318,26 @@ export function createInfiniteExplorationMap(options: InfiniteExplorationMapOpti
         refreshAround(point: WorldPoint): boolean {
             const diff = streaming.update(point);
             if (diff.load.length === 0 && diff.unload.length === 0 && diff.activate.length === 0 && diff.deactivate.length === 0) return false;
-            preloadedChunks = [...streaming.preloadedKeys].map((key) => getChunkAt(parseChunkKey(key)));
+            const queued = new Set(preloadQueue);
+            for (const key of diff.load) {
+                if (!cache.has(key) && !queued.has(key)) preloadQueue.push(key);
+            }
+            preloadQueue = preloadQueue.filter((key) => streaming.preloadedKeys.has(key));
+            for (const key of navigationRequested) {
+                if (!streaming.preloadedKeys.has(key)) navigationRequested.delete(key);
+            }
             activeChunks = [...streaming.activeKeys].map((key) => getChunkAt(parseChunkKey(key)));
+            syncPreloadedChunks();
+            for (const chunk of activeChunks) {
+                deltas.markChunkDiscovered(chunk.key, {
+                    roadCells: chunk.roadCells,
+                    landmarkIds: chunk.landmarks.map((landmark) => landmark.id),
+                });
+                for (const landmark of chunk.landmarks) deltas.markLandmarkDiscovered(landmark.id);
+            }
             const keep = new Set(streaming.preloadedKeys);
             for (const key of cache.keys()) if (!keep.has(key) && cache.size > 64) cache.delete(key);
-            content = contentForChunks(activeChunks);
+            content = contentForChunks(worldSeed, activeChunks);
             revision++;
             return true;
         },
@@ -228,6 +383,7 @@ export function createInfiniteExplorationMap(options: InfiniteExplorationMapOpti
     };
 
     map.refreshAround(map.cellToWorld(map.start));
+    advancePreload(6);
     return map;
 }
 

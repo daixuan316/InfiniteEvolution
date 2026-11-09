@@ -80,6 +80,12 @@ export interface BattleMapDefinition {
     readonly worldSeed?: number;
     readonly activeChunks?: readonly InfiniteChunkDefinition[];
     readonly preloadedChunks?: readonly InfiniteChunkDefinition[];
+    /** Permanent coordinate subtracted from scene nodes to keep render values near zero. */
+    readonly renderOrigin?: WorldPoint;
+    navigationBounds?(): { minX: number; maxX: number; minY: number; maxY: number };
+    navigationWaypoint?(start: GridPoint, goal: GridPoint): GridPoint | null;
+    isNavigationCellReady?(cell: GridPoint): boolean;
+    advancePreload?(budget?: number): boolean;
     isWalkable(cell: GridPoint): boolean;
     isWorldWalkable(point: WorldPoint, radius?: number): boolean;
     cellToWorld(cell: GridPoint): WorldPoint;
@@ -87,6 +93,7 @@ export interface BattleMapDefinition {
     setBarrierBlocking(id: string, blocking: boolean): boolean;
     refreshAround?(point: WorldPoint): boolean;
     getChunkAt?(coordinate: ChunkCoordinate): InfiniteChunkDefinition;
+    enemyHealthMultiplier?(cell: GridPoint): number;
     readObjectDelta?(cell: GridPoint, objectId: string): WorldObjectDelta | undefined;
     writeObjectDelta?(cell: GridPoint, objectId: string, delta: WorldObjectDelta): void;
 }
