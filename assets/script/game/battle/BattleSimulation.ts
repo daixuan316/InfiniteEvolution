@@ -38,6 +38,7 @@ export interface BattleStructure extends CombatTarget {
 
 export interface BattleSimulationOptions {
     readonly spawnInitialEnemies?: boolean;
+    readonly playerPosition?: WorldPoint;
     readonly playerModifiers?: BattlePlayerModifiers;
     readonly arkCore?: {
         readonly position: WorldPoint;
@@ -263,10 +264,12 @@ export class BattleSimulation {
     playerAutoAttacking = false;
     playerDodgePlayback = 0;
     playerDodgeCount = 0;
+    playerPollution = 32;
     playerTarget: CombatTarget | null = null;
     facing: WorldPoint = { x: 1, y: 0 };
     sprinting = false;
     private playerPathIndex = 0;
+    private playerDestination: WorldPoint | null = null;
     private moveInput: WorldPoint = { x: 0, y: 0 };
     private dodgeCooldown = 0;
     private playerAttackCooldown = 0;
@@ -305,9 +308,10 @@ export class BattleSimulation {
         this.autoAttackRange = this.weaponRuntime.activeSnapshot.range;
         this.projectileSpeed = this.weaponRuntime.activeSnapshot.projectileSpeed;
         this.dodgeCooldownDuration = equipment.dodgeCooldown;
+        const initialPlayerPosition = options.playerPosition ?? map.cellToWorld(map.start);
         this.player = {
             id: "player",
-            ...map.cellToWorld(map.start),
+            ...initialPlayerPosition,
             radius: this.playerRadius,
             speed: equipment.moveSpeed * playerModifiers.moveSpeedMultiplier,
             defense: equipment.defense,
@@ -317,12 +321,18 @@ export class BattleSimulation {
                 zeroState: "downed",
             }),
         };
-        this.enemies = !this.spawnInitialEnemies ? [] : map.enemySpawns.map((spawn, index) => this.createEnemy(
-            INITIAL_ENEMY_KINDS[index] ?? "walker",
-            map.cellToWorld(spawn),
-            index * 0.12,
-            map.infinite ? `chunk-enemy:${spawn.x}:${spawn.y}` : undefined,
-        ));
+        map.refreshAround?.(initialPlayerPosition);
+        this.enemies = !this.spawnInitialEnemies ? [] : map.enemySpawns.flatMap((spawn, index) => {
+            const stableId = map.infinite ? `chunk-enemy:${spawn.x}:${spawn.y}` : undefined;
+            if (stableId && map.readObjectDelta?.(spawn, stableId)?.destroyed) return [];
+            return [this.createEnemy(
+                INITIAL_ENEMY_KINDS[index] ?? "walker",
+                map.cellToWorld(spawn),
+                index * 0.12,
+                stableId,
+                map.enemyHealthMultiplier?.(spawn) ?? 1,
+            )];
+        });
         this.structures = map.barriers.map((barrier) => ({
             id: barrier.id,
             kind: "breakable-barrier" as const,
@@ -504,6 +514,7 @@ export class BattleSimulation {
             this.facing = { ...this.moveInput };
             this.playerPath = [];
             this.playerPathIndex = 0;
+            this.playerDestination = null;
         }
     }
 
@@ -522,6 +533,7 @@ export class BattleSimulation {
         if (Math.hypot(this.player.x - before.x, this.player.y - before.y) < 1) return false;
         this.playerPath = [];
         this.playerPathIndex = 0;
+        this.playerDestination = null;
         this.dodgeCooldown = this.dodgeCooldownDuration;
         this.playerDodgePlayback = 0.5;
         this.playerDodgeCount += 1;
@@ -530,19 +542,25 @@ export class BattleSimulation {
 
     setPlayerDestination(destination: WorldPoint): boolean {
         if (!this.player.vitality.active) return false;
-        const start = this.map.worldToCell(this.player);
-        const requestedGoal = this.map.worldToCell(destination);
-        const path = this.pathfinder.findPathToNearest(start, requestedGoal);
+        const path = this.planPlayerPath(destination);
         if (path.length === 0) return false;
+        this.playerDestination = { ...destination };
         this.moveInput = { x: 0, y: 0 };
         this.playerPath = path;
         this.playerPathIndex = Math.min(1, path.length);
         return true;
     }
 
+    private planPlayerPath(destination: WorldPoint): GridPoint[] {
+        const start = this.map.worldToCell(this.player);
+        const requestedGoal = this.map.worldToCell(destination);
+        return this.pathfinder.findPathToNearest(start, requestedGoal);
+    }
+
     update(deltaTime: number): void {
         this.hitEvents.length = 0;
         this.refreshWorldContent();
+        this.map.advancePreload?.(6);
         const dt = Math.max(0, Math.min(deltaTime, 0.1));
         this.dodgeCooldown = Math.max(0, this.dodgeCooldown - dt);
         this.playerDodgePlayback = Math.max(0, this.playerDodgePlayback - dt);
@@ -555,7 +573,18 @@ export class BattleSimulation {
                 this.moveWithCollision(this.player, this.moveInput.x * this.player.speed * speedMultiplier * dt, this.moveInput.y * this.player.speed * speedMultiplier * dt);
             } else {
                 this.playerPathIndex = this.followPath(this.player, this.playerPath, this.playerPathIndex, dt, speedMultiplier);
-                if (this.playerPathIndex >= this.playerPath.length) this.playerPath = [];
+                if (this.playerPathIndex >= this.playerPath.length) {
+                    this.playerPath = [];
+                    if (this.playerDestination && distance(this.player, this.playerDestination) <= this.map.tileSize) {
+                        this.playerDestination = null;
+                    } else if (this.playerDestination) {
+                        const continuation = this.planPlayerPath(this.playerDestination);
+                        if (continuation.length > 1) {
+                            this.playerPath = continuation;
+                            this.playerPathIndex = 1;
+                        }
+                    }
+                }
             }
             this.playerMoving = directInput || this.playerPathIndex < this.playerPath.length;
         } else {
@@ -611,13 +640,24 @@ export class BattleSimulation {
                     return;
                 }
                 const kindIndex = Math.abs(Math.imul(spawn.x, 31) + Math.imul(spawn.y, 17)) % INITIAL_ENEMY_KINDS.length;
-                nextEnemies.push(this.createEnemy(INITIAL_ENEMY_KINDS[kindIndex], this.map.cellToWorld(spawn), index * 0.04, id));
+                nextEnemies.push(this.createEnemy(
+                    INITIAL_ENEMY_KINDS[kindIndex],
+                    this.map.cellToWorld(spawn),
+                    index * 0.04,
+                    id,
+                    this.map.enemyHealthMultiplier?.(spawn) ?? 1,
+                ));
             });
             this.enemies.splice(0, this.enemies.length, ...nextEnemies);
         }
 
-        this.playerPath = [];
-        this.playerPathIndex = 0;
+        if (this.playerDestination) {
+            this.playerPath = this.planPlayerPath(this.playerDestination);
+            this.playerPathIndex = Math.min(1, this.playerPath.length);
+        } else {
+            this.playerPath = [];
+            this.playerPathIndex = 0;
+        }
         this.lastMapRevision = revision;
         return true;
     }
@@ -641,8 +681,11 @@ export class BattleSimulation {
         };
     }
 
-    private createEnemy(kind: EnemyKind, position: WorldPoint, repathIn: number, stableId?: string): EnemyAgent {
+    private createEnemy(kind: EnemyKind, position: WorldPoint, repathIn: number, stableId?: string, healthMultiplier = 1): EnemyAgent {
         const combat = ENEMY_COMBAT[kind];
+        const normalizedHealthMultiplier = Number.isFinite(healthMultiplier)
+            ? Math.max(1, Math.min(3, healthMultiplier))
+            : 1;
         return {
             id: stableId ?? `enemy-${this.nextEnemyId++}`,
             kind,
@@ -650,7 +693,7 @@ export class BattleSimulation {
             radius: combat.radius,
             speed: combat.speed,
             defense: combat.defense,
-            vitality: new VitalityRuntime({ maxHealth: combat.health, zeroState: "dead" }),
+            vitality: new VitalityRuntime({ maxHealth: combat.health * normalizedHealthMultiplier, zeroState: "dead" }),
             attackDamage: combat.damage,
             attackInterval: combat.interval,
             attackCooldown: 0,
@@ -699,6 +742,10 @@ export class BattleSimulation {
             nearArk: this.hordeStarted,
         });
         if (!shot.ok) return;
+        if (shot.value.pollutionCost > 0) {
+            this.playerPollution = Math.min(100, this.playerPollution + shot.value.pollutionCost);
+            if (this.playerPollution >= 60) this.addEquipmentMemory(shot.value.instanceId, "highPollutionUse", 1);
+        }
         this.spawnPlayerProjectile(target, shot.value);
         if (targetDistance <= 160) this.addEquipmentMemory(shot.value.instanceId, "closeHit", shot.value.projectileCount);
     }
