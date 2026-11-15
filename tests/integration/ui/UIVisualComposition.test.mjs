@@ -92,12 +92,28 @@ test("hall composes the generated ark art with textured game panels", () => {
     assert.match(source, /filledSegments/);
     assert.match(source, /hud-combat\/01-health/);
     assert.match(source, /hud-combat\/02-shield/);
+    assert.match(source, /IntelTargetSummary/);
+    assert.match(source, /intelRuntime\.selectedTarget/);
 });
 
 test("feature pages use module-specific visual workspaces instead of metric-only placeholders", () => {
     const source = read("assets/script/game/ui/FeaturePageViewComp.ts");
     assert.match(source, /FEATURE_VISUALS/);
     assert.match(source, /renderWorkspace/);
+    assert.match(source, /UIBuilder\.surface/);
+    assert.match(source, /UIBuilder\.slot/);
+});
+
+test("Intel page composes real target, event, and horde panels", () => {
+    const source = read("assets/script/game/intel/IntelPageViewComp.ts");
+
+    assert.match(source, /INTEL_TARGETS/);
+    assert.match(source, /INTEL_EVENTS/);
+    assert.match(source, /NEXT_HORDE_FORECAST/);
+    assert.match(source, /renderMapContent/);
+    assert.match(source, /renderMissionContent/);
+    assert.match(source, /renderEventContent/);
+    assert.match(source, /renderHordeContent/);
     assert.match(source, /UIBuilder\.surface/);
     assert.match(source, /UIBuilder\.slot/);
 });

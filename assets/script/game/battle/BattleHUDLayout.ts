@@ -63,9 +63,9 @@ export function playerStatusLayout(): BattlePlayerStatusLayout {
         healthBar: centeredRect(26, 31, 278, 24),
         healthText: centeredRect(70, 31, 170, 24),
         shieldBar: centeredRect(7, -15, 240, 16),
-        shieldText: centeredRect(-3, 5, 220, 18),
-        pollutionText: centeredRect(-28, -39, 170, 18),
-        downedText: centeredRect(120, -39, 110, 22),
+        shieldText: centeredRect(-3, 7, 220, 18),
+        pollutionText: centeredRect(-28, -37, 170, 18),
+        downedText: centeredRect(120, -37, 110, 22),
     };
 }
 

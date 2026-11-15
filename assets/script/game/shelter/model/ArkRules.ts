@@ -139,6 +139,13 @@ export function buildArkBattleSnapshot(state: ArkState): ArkBattleSnapshot {
     const powered = new Set(derived.poweredInstanceIds);
     const entries: ArkBattleModuleSnapshot[] = installedEntries(state).map(({ slot, instance, definition }) => {
         const evolution = instance.evolutionId ? arkEvolutionById(instance.evolutionId) : undefined;
+        const weaponNetwork = derived.adjacencies.some((entry) => entry.instanceId === instance.instanceId && entry.bonusId === "weapon-network");
+        const repairArmor = derived.adjacencies.some((entry) => entry.instanceId === instance.instanceId && entry.bonusId === "repair-armor");
+        const battle = {
+            ...definition.battle,
+            ...(definition.battle.attackInterval && weaponNetwork ? { attackInterval: definition.battle.attackInterval * 0.92 } : {}),
+            ...(repairArmor ? { repairRate: (definition.battle.repairRate ?? 0) + 3 } : {}),
+        };
         return Object.freeze({
             instanceId: instance.instanceId,
             definitionId: definition.id,
@@ -149,7 +156,7 @@ export function buildArkBattleSnapshot(state: ArkState): ArkBattleSnapshot {
             maxDurability: definition.maxDurability,
             powered: powered.has(instance.instanceId),
             operational: instance.durability > 0 && powered.has(instance.instanceId),
-            battle: Object.freeze({ ...definition.battle }),
+            battle: Object.freeze(battle),
             abilityId: evolution?.abilityId ?? null,
             visualMarker: evolution?.visualMarker ?? null,
         });

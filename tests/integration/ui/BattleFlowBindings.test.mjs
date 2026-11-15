@@ -97,3 +97,27 @@ test("Battle HUD binds exploration objects, interaction action, notices, and map
     assert.match(source, /simulation\.explorationPoints/);
     assert.match(source, /findCombatTarget\(projectile\.targetId\)/);
 });
+
+test("Battle HUD binds generated loot states and starts effects only after accepted loot", () => {
+    const source = readFileSync("assets/script/game/battle/BattleHUDViewComp.ts", "utf8");
+
+    assert.match(source, /lootChestAssetPath/);
+    assert.match(source, /isLootChestId/);
+    assert.match(source, /lootChestEffectProfile/);
+    assert.match(source, /advanceLootChestOpening/);
+    assert.match(source, /lootOpeningRemaining = new Map<string, number>/);
+    assert.match(source, /lootChestAssetPath\(typeId, "world", state\)/);
+    assert.match(source, /lootChestAssetPath\(typeId, "icons", "closed"\)/);
+    assert.match(source, /if \(!result\.accepted\) return;[\s\S]*lootOpeningRemaining\.set/);
+});
+
+test("Battle HUD consumes and tracks the selected Intel target", () => {
+    const source = readFileSync("assets/script/game/battle/BattleHUDViewComp.ts", "utf8");
+
+    assert.match(source, /findIntelTarget\(this\.params\.targetId\)/);
+    assert.match(source, /findIntelTarget\("hospital"\)/);
+    assert.match(source, /new IntelTargetTracker/);
+    assert.match(source, /progress\.becameReached/);
+    assert.match(source, /GameEvent\.IntelTargetReached/);
+    assert.match(source, /drawIntelTargetMarker/);
+});

@@ -5,6 +5,7 @@ import {
     Label,
     Node,
     Size,
+    UIOpacity,
     UITransform,
     Vec3,
     _decorator,
@@ -18,6 +19,8 @@ import { type SafeFrame, UIBuilder } from "../common/ui/UIBuilder";
 import { uiNavigation } from "../common/ui/UIRuntime";
 import { UI_THEME } from "../common/ui/UITheme";
 import type { HordePhase } from "../monster/model/HordeDirector";
+import { arkRuntime } from "../shelter/ArkRuntime.ts";
+import { persistentEquipmentRuntime } from "../save/SaveModule.ts";
 import { createArkDefenseMap } from "./ArkDefenseMap";
 import { BattleSimulation, type EnemyAgent, type EnemyKind } from "./BattleSimulation";
 
@@ -43,11 +46,17 @@ const ENEMY_ART: Readonly<Record<EnemyKind, { readonly asset: string; readonly s
 @ccclass("NightDefenseViewComp")
 export class NightDefenseViewComp extends GamePage {
     private readonly map = createArkDefenseMap();
+    private readonly equipmentRuntime = persistentEquipmentRuntime();
+    private readonly equipmentBattleId = `night-defense-${Date.now()}`;
+    private readonly arkSnapshot = arkRuntime.service.createBattleSnapshot();
     private readonly simulation = new BattleSimulation(this.map, {
         spawnInitialEnemies: false,
+        arkSnapshot: this.arkSnapshot,
+        equipmentSnapshot: this.equipmentRuntime.combatSnapshot(),
         arkCore: {
             position: this.map.cellToWorld(this.map.extraction),
-            maxHealth: 1800,
+            maxHealth: this.arkSnapshot.coreMaxDurability,
+            initialHealth: this.arkSnapshot.coreDurability,
             defense: 35,
             radius: 88,
         },
@@ -70,9 +79,14 @@ export class NightDefenseViewComp extends GamePage {
     private readonly enemyNodes = new Map<string, Node>();
     private readonly enemyHealthBars = new Map<string, Node>();
     private readonly projectileNodes = new Map<string, Node>();
+    private readonly arkModuleNodes = new Map<string, Node>();
+    private readonly arkModuleHealthBars = new Map<string, Node>();
     private lastHordePhase: HordePhase | null = null;
     private paused = false;
     private ended = false;
+    private battleSettled = false;
+    private equipmentSettled = false;
+    private weaponLabel!: Label;
 
     protected onLoad(): void {
         this.render();
@@ -93,6 +107,7 @@ export class NightDefenseViewComp extends GamePage {
         oops.message.off(GameEvent.GamePaused, this.onGamePaused, this);
         oops.message.off(GameEvent.GameResumed, this.onGameResumed, this);
         this.worldTouchLayer?.off(Node.EventType.TOUCH_END, this.onWorldTouchEnd, this);
+        this.settleEquipmentMemory();
         super.onDestroy();
     }
 
@@ -102,7 +117,7 @@ export class NightDefenseViewComp extends GamePage {
             this.node,
             "gui/hall/texture/ark-garage",
             new Size(this.frame.width, this.frame.height),
-            new Color(105, 118, 128, 255),
+            new Color(150, 148, 138, 255),
         );
         this.renderArena();
         this.renderTouchLayer();
@@ -113,11 +128,11 @@ export class NightDefenseViewComp extends GamePage {
     private renderArena(): void {
         this.worldLayer = this.createNode(this.node, "ArkDefenseArena", new Size(this.map.worldWidth, this.map.worldHeight), Vec3.ZERO);
         const grid = this.worldLayer.addComponent(Graphics);
-        grid.fillColor = new Color(2, 8, 13, 92);
+        grid.fillColor = new Color(10, 11, 10, 92);
         grid.rect(-this.map.worldWidth / 2, -this.map.worldHeight / 2, this.map.worldWidth, this.map.worldHeight);
         grid.fill();
         grid.lineWidth = 1;
-        grid.strokeColor = new Color(36, 228, 239, 28);
+        grid.strokeColor = new Color(104, 180, 168, 28);
         for (let x = 1; x < this.map.columns; x++) {
             const px = -this.map.worldWidth / 2 + x * this.map.tileSize;
             grid.moveTo(px, -this.map.worldHeight / 2);
@@ -137,7 +152,7 @@ export class NightDefenseViewComp extends GamePage {
             new Size(290, 210),
             new Vec3(core.x, core.y + 24),
             false,
-            new Color(190, 210, 220, 255),
+            new Color(214, 210, 198, 255),
             "contain",
         );
         const coreMarker = this.createNode(this.worldLayer, "ArkCoreMarker", new Size(190, 190), new Vec3(core.x, core.y));
@@ -150,6 +165,21 @@ export class NightDefenseViewComp extends GamePage {
 
         this.playerNode = this.createNode(this.worldLayer, "Defender", new Size(128, 128), Vec3.ZERO);
         void UIBuilder.sprite(this.playerNode, "gui/battle-hud/actors/player-fire", new Size(128, 128), Vec3.ZERO, false, Color.WHITE, "contain");
+        for (const module of this.simulation.arkModules) {
+            const node = this.createNode(this.worldLayer, `ArkModule:${module.instanceId}`, new Size(92, 82), new Vec3(module.x, module.y));
+            node.addComponent(UIOpacity);
+            const graphics = node.addComponent(Graphics);
+            graphics.fillColor = module.powered ? new Color(58, 96, 88, 245) : new Color(40, 43, 40, 235);
+            graphics.roundRect(-38, -27, 76, 54, 8);
+            graphics.fill();
+            graphics.lineWidth = 4;
+            graphics.strokeColor = module.powered ? UI_THEME.colors.cyan : UI_THEME.colors.muted;
+            graphics.roundRect(-38, -27, 76, 54, 8);
+            graphics.stroke();
+            UIBuilder.label(node, `ArkModuleName:${module.instanceId}`, module.name, new Size(110, 24), new Vec3(0, -42), 13, UI_THEME.colors.white);
+            this.arkModuleHealthBars.set(module.instanceId, UIBuilder.progressBar(node, `ArkModuleHealth:${module.instanceId}`, new Size(86, 12), new Vec3(0, 38), module.vitality.healthRatio, UI_THEME.colors.cyan));
+            this.arkModuleNodes.set(module.instanceId, node);
+        }
     }
 
     private renderTouchLayer(): void {
@@ -158,7 +188,7 @@ export class NightDefenseViewComp extends GamePage {
     }
 
     private renderStatus(): void {
-        const top = UIBuilder.hudPlate(this.node, "DefenseStatus", "defense-hud/01-top-wave-status", new Size(620, 116), new Vec3(0, this.frame.top - 58));
+        const top = UIBuilder.hudPlate(this.node, "DefenseStatus", "defense-hud/02-horde-wave-frame", new Size(620, 116), new Vec3(0, this.frame.top - 58));
         UIBuilder.label(top, "DefenseTitle", "方舟庇护所 · 夜间防线", new Size(290, 34), new Vec3(-142, 27), 22, UI_THEME.colors.white);
         this.phaseLabel = UIBuilder.label(top, "WavePhase", "尸潮预警", new Size(180, 34), new Vec3(175, 27), 21, UI_THEME.colors.orange);
         this.phaseProgressBar = UIBuilder.progressBar(top, "WaveProgress", new Size(430, 18), new Vec3(-40, -23), 0, UI_THEME.colors.orange);
@@ -175,6 +205,16 @@ export class NightDefenseViewComp extends GamePage {
 
         const pause = UIBuilder.navButton(this.node, "BtnDefensePause", "暂停", "system-nav/10-pause", new Size(102, 76), new Vec3(this.frame.right - 55, this.frame.bottom + 44));
         this.bindTouch(pause, () => { void this.openPause(); });
+        const power = UIBuilder.button(this.node, "BtnEmergencyPower", "应急转供", new Size(150, 58), new Vec3(this.frame.left + 90, this.frame.bottom + 42), true);
+        this.bindTouch(power, () => this.emergencyPower());
+        const repair = UIBuilder.button(this.node, "BtnRemoteRepair", "远程维修", new Size(150, 58), new Vec3(this.frame.left + 252, this.frame.bottom + 42));
+        this.bindTouch(repair, () => this.remoteRepair());
+        const overload = UIBuilder.button(this.node, "BtnModuleOverload", "模块过载", new Size(150, 58), new Vec3(this.frame.left + 414, this.frame.bottom + 42));
+        this.bindTouch(overload, () => this.overloadModule());
+        const swap = UIBuilder.button(this.node, "BtnDefenseWeaponSwap", "换枪", new Size(130, 58), new Vec3(this.frame.right - 230, this.frame.bottom + 42), true);
+        this.bindTouch(swap, () => { this.simulation.switchWeapon(); this.syncWeaponStatus(); });
+        this.weaponLabel = UIBuilder.label(this.node, "DefenseWeaponStatus", "", new Size(260, 32), new Vec3(this.frame.right - 230, this.frame.bottom + 84), 16, UI_THEME.colors.cyan);
+        this.syncWeaponStatus();
     }
 
     private renderResult(): void {
@@ -203,6 +243,28 @@ export class NightDefenseViewComp extends GamePage {
         UIBuilder.setProgressBarRatio(this.phaseProgressBar, this.simulation.hordeProgressRatio);
         this.syncEnemies();
         this.syncProjectiles();
+        this.syncWeaponStatus();
+        for (const module of this.simulation.arkModules) {
+            const node = this.arkModuleNodes.get(module.instanceId);
+            if (node) node.getComponent(UIOpacity)!.opacity = module.powered && module.vitality.active ? 255 : 110;
+            const health = this.arkModuleHealthBars.get(module.instanceId);
+            if (health) UIBuilder.setProgressBarRatio(health, module.vitality.healthRatio);
+        }
+    }
+
+    private syncWeaponStatus(): void {
+        if (!this.weaponLabel) return;
+        const weapon = this.simulation.weaponStatus;
+        this.weaponLabel.string = `${weapon.name}  ${weapon.magazine}/${weapon.magazineSize}${weapon.overheated ? " · 过热" : weapon.reloadRemaining > 0 ? " · 换弹" : ""}`;
+    }
+
+    private settleEquipmentMemory(): void {
+        if (this.equipmentSettled) return;
+        this.equipmentSettled = true;
+        const deltas = this.simulation.drainEquipmentMemoryDeltas();
+        if (deltas.length === 0) return;
+        const result = this.equipmentRuntime.recordBattleMemory(this.equipmentBattleId, deltas);
+        if (result.ok === false) console.error("Night equipment memory settlement failed", result.error);
     }
 
     private syncEnemies(): void {
@@ -301,8 +363,42 @@ export class NightDefenseViewComp extends GamePage {
     }
 
     private async returnToHall(): Promise<void> {
+        if (!this.battleSettled) {
+            const result = arkRuntime.settleBattle(this.simulation.createArkSettlement(`night-${Date.now()}`));
+            this.battleSettled = result.ok;
+            if (result.ok) oops.message.dispatchEvent(GameEvent.ArkBattleSettled);
+        }
         oops.message.dispatchEvent(GameEvent.LeaveBattle);
         await uiNavigation.resetToRoot();
+    }
+
+    private emergencyPower(): void {
+        const target = this.simulation.arkModules.find((module) => !module.powered && module.vitality.active);
+        if (!target || !this.simulation.tryEmergencyPower(target.instanceId)) {
+            oops.gui.toast("没有可转供模块或应急能源不足");
+            return;
+        }
+        oops.gui.toast(`${target.name} 已恢复供电`);
+    }
+
+    private remoteRepair(): void {
+        const target = [...this.simulation.arkModules]
+            .filter((module) => module.vitality.currentHealth < module.vitality.maxHealth)
+            .sort((a, b) => a.vitality.healthRatio - b.vitality.healthRatio)[0];
+        if (!target || !this.simulation.tryRemoteRepair(target.instanceId)) {
+            oops.gui.toast("没有受损模块或维修能源不足");
+            return;
+        }
+        oops.gui.toast(`${target.name} 已执行远程维修`);
+    }
+
+    private overloadModule(): void {
+        const target = this.simulation.arkModules.find((module) => module.powered && module.attackDamage > 0 && module.overloadRemaining <= 0);
+        if (!target || !this.simulation.tryOverload(target.instanceId)) {
+            oops.gui.toast("没有可过载武器或应急能源不足");
+            return;
+        }
+        oops.gui.toast(`${target.name} 过载 10 秒`);
     }
 
     private createNode(parent: Node, name: string, size: Size, position: Vec3): Node {

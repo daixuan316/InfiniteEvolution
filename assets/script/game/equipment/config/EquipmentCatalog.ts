@@ -3,6 +3,7 @@ import type {
     EquipmentCatalog,
     EquipmentTemplate,
     EvolutionDefinition,
+    MemoryKind,
     RecipeDefinition,
     ResonanceDefinition,
     WeaponClass,
@@ -79,11 +80,24 @@ const RESONANCES: ResonanceDefinition[] = [
     { tag: "heavy", name: "重装", tiers: [{ count: 2, modifiers: { defense: 10 }, mechanic: "受击积累反击能量", drawback: "翻滚冷却增加 8%" }, { count: 3, modifiers: { maxShield: 90 }, mechanic: "满能量释放冲击波", drawback: "移动速度降低 5%" }] },
 ];
 
+const MEMORY_PATHS: Readonly<Record<WeaponClass, readonly [MemoryKind, MemoryKind]>> = {
+    assault: ["closeHit", "weakpointHit"],
+    smg: ["swapChain", "closeHit"],
+    shotgun: ["closeHit", "arkDefenseKill"],
+    sniper: ["weakpointHit", "arkDefenseKill"],
+    lmg: ["arkDefenseKill", "swapChain"],
+    grenade: ["arkDefenseKill", "statusProc"],
+    flame: ["statusProc", "closeHit"],
+    arc: ["statusProc", "swapChain"],
+    bio: ["highPollutionUse", "statusProc"],
+};
+
 const EVOLUTIONS: EvolutionDefinition[] = WEAPONS.flatMap((item) => {
     const weaponClass = item.weaponClass!;
+    const memories = MEMORY_PATHS[weaponClass];
     return [
-        { id: `${weaponClass}_path_a`, templateId: item.id, name: `${item.name}·突进型`, memory: "closeHit", threshold: 20, modifiers: { damage: 0.18 }, mechanic: "近距命中获得短时火力" },
-        { id: `${weaponClass}_path_b`, templateId: item.id, name: `${item.name}·猎手型`, memory: "weakpointHit", threshold: 25, modifiers: { weakpointMultiplier: 0.25 }, mechanic: "弱点命中返还射击间隔" },
+        { id: `${weaponClass}_path_a`, templateId: item.id, name: `${item.name}·突进型`, memory: memories[0], threshold: 20, modifiers: { damage: 0.18 }, mechanic: "战斗记忆转化为短时火力" },
+        { id: `${weaponClass}_path_b`, templateId: item.id, name: `${item.name}·猎手型`, memory: memories[1], threshold: 25, modifiers: { weakpointMultiplier: 0.25 }, mechanic: "战斗记忆强化弱点猎杀" },
     ];
 });
 

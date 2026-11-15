@@ -155,15 +155,16 @@ const FIRST_NIGHT_CATALOG: readonly HordeUnitCost[] = [
     { id: "brute", cost: 20, special: true },
 ];
 
-export function createFirstNightHorde(seed = 1): HordeDirector {
+export function createFirstNightHorde(seed = 1, budgetMultiplier = 1): HordeDirector {
     let state = seed >>> 0;
     const rng = (): number => {
         state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
         return state / 0x100000000;
     };
-    const probe = buildHorde({ budget: 20, maxSpecialTypes: 0 }, FIRST_NIGHT_CATALOG, rng);
-    const assault = buildHorde({ budget: 40, maxSpecialTypes: 1 }, FIRST_NIGHT_CATALOG, rng);
-    const climaxFill = buildHorde({ budget: 35, maxSpecialTypes: 0 }, FIRST_NIGHT_CATALOG, rng);
+    const multiplier = Number.isFinite(budgetMultiplier) ? Math.max(0.5, Math.min(2, budgetMultiplier)) : 1;
+    const probe = buildHorde({ budget: 20 * multiplier, maxSpecialTypes: 0 }, FIRST_NIGHT_CATALOG, rng);
+    const assault = buildHorde({ budget: 40 * multiplier, maxSpecialTypes: 1 }, FIRST_NIGHT_CATALOG, rng);
+    const climaxFill = buildHorde({ budget: 35 * multiplier, maxSpecialTypes: 0 }, FIRST_NIGHT_CATALOG, rng);
     const climax: readonly HordeSpawn[] = [{ id: "brute", special: true }, ...climaxFill.units];
 
     return new HordeDirector([

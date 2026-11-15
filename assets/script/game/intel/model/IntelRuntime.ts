@@ -1,4 +1,4 @@
-import { findIntelTarget, type IntelTargetDefinition, type IntelTargetId } from "./IntelCatalog";
+import { findIntelTarget, type IntelTargetDefinition, type IntelTargetId } from "./IntelCatalog.ts";
 
 export class IntelRuntime {
     private targetId: IntelTargetId | null = null;

@@ -40,3 +40,10 @@ test("catalog validation rejects duplicate ids and non-positive weapon values", 
     assert.ok(errors.includes(`duplicate template id: ${EQUIPMENT_CATALOG.templates[0].id}`));
     assert.ok(errors.includes(`invalid weapon damage: ${EQUIPMENT_CATALOG.templates[0].id}`));
 });
+
+test("evolution paths exercise every combat memory type", () => {
+    assert.deepEqual(
+        [...new Set(EQUIPMENT_CATALOG.evolutions.map((item) => item.memory))].sort(),
+        ["arkDefenseKill", "closeHit", "highPollutionUse", "statusProc", "swapChain", "weakpointHit"],
+    );
+});

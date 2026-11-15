@@ -22,7 +22,6 @@ const FEATURE_VISUALS: Readonly<Partial<Record<UIID, FeatureVisual>>> = {
     [UIID.ArkBuild]: { tabs: ["结构", "能源", "防御", "生化"], workspaceTitle: "方舟模块布局", workspaceHint: "选择模块槽位，检查供电、射界与相邻加成", action: "安装模块" },
     [UIID.Research]: { tabs: ["机械", "生存", "生化", "混合"], workspaceTitle: "研究路线", workspaceHint: "解锁前置节点并权衡永久收益与进化代价", action: "开始研究" },
     [UIID.Crew]: { tabs: ["全体", "岗位", "伤病", "任务"], workspaceTitle: "成员岗位台", workspaceHint: "拖入岗位以激活专长，并留意疲劳与士气", action: "确认岗位" },
-    [UIID.Intel]: { tabs: ["地图", "任务", "事件", "尸潮"], workspaceTitle: "灰港行动情报", workspaceHint: "比较风险、资源倾向、距离与撤离窗口", action: "设为目标" },
 };
 
 @ccclass("FeaturePageViewComp")
@@ -38,8 +37,8 @@ export class FeaturePageViewComp extends GamePage {
         if (!model || !visual) throw new Error(`Feature ViewModel missing for UIID ${String(this.params.uiid)}`);
 
         const frame = UIBuilder.prepareRoot(this.node);
-        void UIBuilder.backdrop(this.node, "gui/hall/texture/ark-garage", new Size(frame.width + 8, frame.height + 8), new Color(118, 138, 158, 255));
-        UIBuilder.panel(this.node, "FeatureShade", new Size(frame.width + 8, frame.height + 8), Vec3.ZERO, new Color(2, 10, 20, 205), new Color(2, 10, 20, 0));
+        void UIBuilder.backdrop(this.node, "gui/hall/texture/ark-garage", new Size(frame.width + 8, frame.height + 8), new Color(150, 148, 138, 255));
+        UIBuilder.panel(this.node, "FeatureShade", new Size(frame.width + 8, frame.height + 8), Vec3.ZERO, new Color(10, 11, 10, 205), new Color(10, 11, 10, 0));
         this.renderHeader(frame, model);
         this.renderWorkspace(frame, model, visual);
     }

@@ -39,3 +39,17 @@ test("player auto-fire never treats the Ark core as a hostile target", () => {
     assert.equal(simulation.playerTarget, null);
     assert.equal(simulation.projectiles.length, 0);
 });
+
+test("the horde reaches and damages the Ark core during shelter defense", () => {
+    const map = createArkDefenseMap();
+    const simulation = new BattleSimulation(map, {
+        spawnInitialEnemies: false,
+        arkCore: { position: map.cellToWorld(map.extraction), maxHealth: 1800, defense: 35, radius: 88 },
+    });
+
+    simulation.startHorde(1);
+    advance(simulation, 35);
+
+    assert.ok(simulation.structures[0].vitality.currentHealth < 1800);
+    assert.equal(simulation.player.vitality.currentHealth, simulation.player.vitality.maxHealth);
+});

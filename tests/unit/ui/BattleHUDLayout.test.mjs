@@ -28,6 +28,8 @@ test("player status text stays inside the plate without crossing thin bars", () 
     assert.equal(rectanglesOverlap(layout.healthBar, layout.shieldText), false);
     assert.equal(rectanglesOverlap(layout.shieldText, layout.shieldBar), false);
     assert.equal(rectanglesOverlap(layout.shieldBar, layout.pollutionText), false);
+    assert.ok(layout.shieldText.bottom - layout.shieldBar.top >= 5, "shield label needs a visible gap above its bar");
+    assert.ok(layout.shieldBar.bottom - layout.pollutionText.top >= 5, "pollution label needs a visible gap below the shield bar");
     assert.equal(layout.shieldText.left, layout.shieldBar.left);
     assert.equal(layout.pollutionText.left, layout.shieldBar.left);
 

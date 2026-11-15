@@ -65,22 +65,34 @@ export class UIBuilder {
         };
     }
 
-    static panel(parent: Node, name: string, size: Size, position: Vec3, color: Color = UI_THEME.colors.panel, stroke: Color = UI_THEME.colors.cyan): Node {
+    static panel(parent: Node, name: string, size: Size, position: Vec3, color: Color = UI_THEME.colors.panel, stroke: Color = UI_THEME.colors.cyanDark): Node {
         const node = new Node(name);
         node.layer = parent.layer;
         const transform = node.addComponent(UITransform);
         transform.setContentSize(size);
         const graphics = node.addComponent(Graphics);
+        const radius = Math.min(UI_THEME.radius.panel, size.width / 4, size.height / 4);
+        const inset = UI_THEME.stroke.width / 2;
         graphics.fillColor = color;
-        this.cutCornerPath(graphics, size, 12);
+        graphics.roundRect(-size.width / 2, -size.height / 2, size.width, size.height, radius);
         graphics.fill();
-        graphics.lineWidth = 3;
+        graphics.lineWidth = UI_THEME.stroke.width;
         graphics.strokeColor = stroke;
-        this.cutCornerPath(graphics, new Size(size.width - 3, size.height - 3), 10);
+        graphics.roundRect(-size.width / 2 + inset, -size.height / 2 + inset, size.width - inset * 2, size.height - inset * 2, Math.max(0, radius - inset));
         graphics.stroke();
         node.setPosition(position);
         parent.addChild(node);
         return node;
+    }
+
+    /** 给可点节点挂按压反馈：按下轻微缩小，抬起或取消时还原。 */
+    static pressable(node: Node): void {
+        const origin = node.scale.clone();
+        const pressed = (): void => node.setScale(origin.x * 0.96, origin.y * 0.96, origin.z);
+        const restore = (): void => node.setScale(origin.x, origin.y, origin.z);
+        node.on(Node.EventType.TOUCH_START, pressed, node);
+        node.on(Node.EventType.TOUCH_END, restore, node);
+        node.on(Node.EventType.TOUCH_CANCEL, restore, node);
     }
 
     static label(parent: Node, name: string, text: string, size: Size, position: Vec3, fontSize: number = UI_THEME.font.body, color: Color = UI_THEME.colors.white, align: HorizontalTextAlignment = HorizontalTextAlignment.CENTER): Label {
@@ -109,10 +121,10 @@ export class UIBuilder {
             name,
             new Size(width, height),
             position,
-            primary ? new Color(89, 58, 8, 252) : UI_THEME.colors.panelSoft,
-            primary ? UI_THEME.colors.orange : UI_THEME.colors.cyan,
+            primary ? new Color(74, 56, 22, 252) : UI_THEME.colors.panelSoft,
+            primary ? UI_THEME.colors.amber : UI_THEME.colors.cyanDark,
         );
-        this.label(node, `${name}Label`, text, new Size(width - 18, height - 12), Vec3.ZERO, primary ? 24 : 20, primary ? UI_THEME.colors.orange : UI_THEME.colors.white);
+        this.label(node, `${name}Label`, text, new Size(width - 18, height - 12), Vec3.ZERO, primary ? 24 : 20, primary ? UI_THEME.colors.amber : UI_THEME.colors.white);
         return node;
     }
 
@@ -128,7 +140,7 @@ export class UIBuilder {
             new Size(wide ? size.width - 84 : size.width - 14, 30),
             new Vec3(wide ? 24 : 0, wide ? 0 : -size.height / 2 + 19),
             wide ? (primary ? 22 : 20) : 17,
-            primary ? UI_THEME.colors.black : UI_THEME.colors.white,
+            primary ? UI_THEME.colors.amber : UI_THEME.colors.white,
         );
         return node;
     }
@@ -162,7 +174,7 @@ export class UIBuilder {
         fill.active = width > 0;
         graphics.clear();
         if (width > 0) {
-            graphics.roundRect(-width / 2, -height / 2, width, height, 4);
+            graphics.roundRect(-width / 2, -height / 2, width, height, UI_THEME.radius.bar);
             graphics.fill();
         }
     }
@@ -228,7 +240,7 @@ export class UIBuilder {
     }
 
     static hudPlate(parent: Node, name: string, asset: string, size: Size, position: Vec3): Node {
-        const node = this.panel(parent, name, size, position, new Color(3, 15, 27, 220), UI_THEME.colors.cyanDark);
+        const node = this.panel(parent, name, size, position, new Color(13, 15, 14, 220), UI_THEME.colors.cyanDark);
         void this.sprite(node, `gui/ui-p0/texture/${asset}`, size, Vec3.ZERO, false);
         return node;
     }
@@ -283,22 +295,5 @@ export class UIBuilder {
         sprite.spriteFrame = frame;
         sprite.color = tint;
         return sprite;
-    }
-
-    private static cutCornerPath(graphics: Graphics, size: Size, cut: number): void {
-        const left = -size.width / 2;
-        const right = size.width / 2;
-        const bottom = -size.height / 2;
-        const top = size.height / 2;
-        const c = Math.min(cut, size.width / 4, size.height / 4);
-        graphics.moveTo(left + c, bottom);
-        graphics.lineTo(right - c, bottom);
-        graphics.lineTo(right, bottom + c);
-        graphics.lineTo(right, top - c);
-        graphics.lineTo(right - c, top);
-        graphics.lineTo(left + c, top);
-        graphics.lineTo(left, top - c);
-        graphics.lineTo(left, bottom + c);
-        graphics.close();
     }
 }

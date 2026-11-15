@@ -38,4 +38,18 @@ export enum GameEvent {
     WorkshopQueueChanged = "WorkshopQueueChanged",
     /** 制造任务完成并已入库 */
     CraftCompleted = "CraftCompleted",
+    /** 探索情报目标发生变化 */
+    IntelTargetChanged = "IntelTargetChanged",
+    /** 玩家首次抵达本次探索目标区域 */
+    IntelTargetReached = "IntelTargetReached",
+    /** 方舟建设状态变化 */
+    ArkStateChanged = "ArkStateChanged",
+    /** 方舟供电变化 */
+    ArkPowerChanged = "ArkPowerChanged",
+    /** 方舟噪音变化 */
+    ArkNoiseChanged = "ArkNoiseChanged",
+    /** 方舟模块受损 */
+    ArkModuleDamaged = "ArkModuleDamaged",
+    /** 方舟夜战已结算 */
+    ArkBattleSettled = "ArkBattleSettled",
 }

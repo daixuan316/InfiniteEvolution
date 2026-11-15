@@ -8,7 +8,11 @@ import { HALL_DEMO_VIEW_MODEL } from "../common/ui/UIDemoData";
 import { UIBuilder } from "../common/ui/UIBuilder";
 import { FEATURE_ROUTES } from "../common/ui/UIRoute";
 import { uiNavigation } from "../common/ui/UIRuntime";
+import type { PageParams } from "../common/ui/UINavigationService.ts";
 import { UI_THEME } from "../common/ui/UITheme";
+import { decideIntelDeparture } from "../intel/model/IntelDeparture.ts";
+import { intelRuntime } from "../intel/model/IntelRuntime.ts";
+import { arkRuntime } from "../shelter/ArkRuntime.ts";
 import { filledSegments, fitSizeWithin, hallTopBarLeftLayout, isHazardStripeBright } from "./HallLayout";
 
 const { ccclass } = _decorator;
@@ -25,19 +29,28 @@ const BUTTON_NAMES: Readonly<Partial<Record<UIID, string>>> = {
 const RESOURCE_ICONS: Readonly<Record<string, string>> = {
     scrap: "resources-items/01-scrap",
     alloy: "resources-items/02-alloy",
-    energy: "resources-items/04-energy-cell",
+    energyCell: "resources-items/04-energy-cell",
 };
 
 @ccclass("HallViewComp")
 export class HallViewComp extends GamePage {
+    private rendered = false;
+
+    configure(params: PageParams): void {
+        super.configure(params);
+        if (this.rendered) this.render();
+    }
+
     protected onLoad(): void {
         this.render();
+        this.rendered = true;
     }
 
     private render(): void {
+        this.clearBindings();
         const frame = UIBuilder.prepareRoot(this.node);
-        void UIBuilder.backdrop(this.node, "gui/hall/texture/ark-garage", new Size(frame.width + 8, frame.height + 8), new Color(174, 190, 210, 255));
-        UIBuilder.panel(this.node, "HallBackdropShade", new Size(frame.width + 8, frame.height + 8), Vec3.ZERO, new Color(2, 9, 18, 118), new Color(2, 9, 18, 0));
+        void UIBuilder.backdrop(this.node, "gui/hall/texture/ark-garage", new Size(frame.width + 8, frame.height + 8), new Color(150, 148, 138, 255));
+        UIBuilder.panel(this.node, "HallBackdropShade", new Size(frame.width + 8, frame.height + 8), Vec3.ZERO, new Color(10, 11, 10, 128), new Color(10, 11, 10, 0));
 
         const topHeight = 82;
         const bottomHeight = 102;
@@ -79,10 +92,16 @@ export class HallViewComp extends GamePage {
             new Size(resourceRailWidth, 60),
             new Vec3(topWidth / 2 - resourceRailWidth / 2 - 14, 0),
             "card",
-            new Color(194, 226, 232, 255),
+            new Color(214, 210, 198, 255),
         );
-        const resourceCellWidth = resourceRailWidth / HALL_DEMO_VIEW_MODEL.resources.length;
-        HALL_DEMO_VIEW_MODEL.resources.forEach((resource, index) => {
+        const ark = arkRuntime.service.snapshot();
+        const resources = [
+            { id: "scrap", label: "废料", value: ark.resources.scrap },
+            { id: "alloy", label: "合金", value: ark.resources.alloy },
+            { id: "energyCell", label: "能源", value: ark.resources.energyCell },
+        ];
+        const resourceCellWidth = resourceRailWidth / resources.length;
+        resources.forEach((resource, index) => {
             const x = -resourceRailWidth / 2 + resourceCellWidth * (index + 0.5);
             const cell = new Node(`ResourceCell:${resource.id}`);
             cell.layer = resourceRail.layer;
@@ -90,7 +109,7 @@ export class HallViewComp extends GamePage {
             cell.setPosition(x, 0);
             resourceRail.addChild(cell);
 
-            const iconChip = UIBuilder.panel(cell, `ResourceIconChip:${resource.id}`, new Size(42, 42), new Vec3(-resourceCellWidth / 2 + 29, 0), new Color(3, 22, 34, 248), UI_THEME.colors.cyanDark);
+            const iconChip = UIBuilder.panel(cell, `ResourceIconChip:${resource.id}`, new Size(42, 42), new Vec3(-resourceCellWidth / 2 + 29, 0), new Color(20, 22, 20, 248), UI_THEME.colors.cyanDark);
             void UIBuilder.icon(iconChip, RESOURCE_ICONS[resource.id], 34);
             UIBuilder.label(cell, `ResourceLabel:${resource.id}`, resource.label, new Size(68, 20), new Vec3(24, 13), 12, UI_THEME.colors.muted, HorizontalTextAlignment.LEFT);
             UIBuilder.label(cell, `ResourceValue:${resource.id}`, `${resource.value}`, new Size(72, 28), new Vec3(26, -10), 22, UI_THEME.colors.white, HorizontalTextAlignment.LEFT);
@@ -102,8 +121,10 @@ export class HallViewComp extends GamePage {
     }
 
     private renderArkStatus(x: number, y: number, width: number, height: number): void {
+        const ark = arkRuntime.service.snapshot();
+        const derived = arkRuntime.service.derived();
         const panel = UIBuilder.surface(this.node, "ArkStatus", new Size(width, height), new Vec3(x, y), "large");
-        const header = UIBuilder.panel(panel, "ArkStatusHeader", new Size(width - 30, 46), new Vec3(0, height / 2 - 38), new Color(5, 55, 68, 238), UI_THEME.colors.cyanDark);
+        const header = UIBuilder.panel(panel, "ArkStatusHeader", new Size(width - 30, 46), new Vec3(0, height / 2 - 38), new Color(38, 42, 39, 238), UI_THEME.colors.cyanDark);
         void UIBuilder.icon(header, "system-nav/02-layout", 34, new Vec3(-width / 2 + 44, 0));
         UIBuilder.label(header, "ArkStatusTitle", "方舟状态", new Size(width - 84, 38), new Vec3(24, 0), 21, UI_THEME.colors.white, HorizontalTextAlignment.LEFT);
 
@@ -112,8 +133,8 @@ export class HallViewComp extends GamePage {
             "CoreStatusModule",
             "hud-combat/01-health",
             "核心耐久",
-            HALL_DEMO_VIEW_MODEL.ark.core,
-            HALL_DEMO_VIEW_MODEL.ark.coreMax,
+            ark.coreDurability,
+            ark.coreMaxDurability,
             new Vec3(0, height / 2 - 112),
             UI_THEME.colors.cyan,
         );
@@ -122,24 +143,24 @@ export class HallViewComp extends GamePage {
             "PowerStatusModule",
             "hud-combat/02-shield",
             "能源负载",
-            HALL_DEMO_VIEW_MODEL.ark.power,
-            HALL_DEMO_VIEW_MODEL.ark.powerMax,
+            derived.powerUsed,
+            Math.max(1, derived.powerCapacity),
             new Vec3(0, height / 2 - 214),
             UI_THEME.colors.orange,
         );
 
         const module = UIBuilder.slot(panel, "ModuleSlotLights", new Size(width - 34, 104), new Vec3(0, -height / 2 + 72), true);
-        const moduleChip = UIBuilder.panel(module, "ModuleIconChip", new Size(48, 48), new Vec3(-width / 2 + 58, 12), new Color(3, 23, 35, 248), UI_THEME.colors.cyanDark);
+        const moduleChip = UIBuilder.panel(module, "ModuleIconChip", new Size(48, 48), new Vec3(-width / 2 + 58, 12), new Color(20, 22, 20, 248), UI_THEME.colors.cyanDark);
         void UIBuilder.icon(moduleChip, "system-nav/02-layout", 38);
         UIBuilder.label(module, "ModuleLabel", "可用模块槽", new Size(112, 24), new Vec3(34, 21), 14, UI_THEME.colors.muted, HorizontalTextAlignment.LEFT);
-        UIBuilder.label(module, "ModuleValue", `${HALL_DEMO_VIEW_MODEL.ark.modules} / ${HALL_DEMO_VIEW_MODEL.ark.modulesMax}`, new Size(112, 32), new Vec3(34, -4), 24, UI_THEME.colors.orange, HorizontalTextAlignment.LEFT);
+        UIBuilder.label(module, "ModuleValue", `${derived.installedInstanceIds.length} / 7`, new Size(112, 32), new Vec3(34, -4), 24, UI_THEME.colors.orange, HorizontalTextAlignment.LEFT);
         this.addSegmentedBar(
             module,
             "ModuleSlotSegments",
             new Size(width - 62, 12),
             new Vec3(0, -35),
-            filledSegments(HALL_DEMO_VIEW_MODEL.ark.modules, HALL_DEMO_VIEW_MODEL.ark.modulesMax, HALL_DEMO_VIEW_MODEL.ark.modulesMax),
-            HALL_DEMO_VIEW_MODEL.ark.modulesMax,
+            filledSegments(derived.installedInstanceIds.length, 7, 7),
+            7,
             UI_THEME.colors.cyan,
         );
     }
@@ -156,28 +177,50 @@ export class HallViewComp extends GamePage {
             "ArkHeroGlow",
             new Size(Math.min(width - 54, artSize.width + 56), Math.min(height - 102, artSize.height + 34)),
             new Vec3(0, -8),
-            new Color(3, 30, 46, 112),
-            new Color(22, 154, 174, 150),
+            new Color(24, 27, 24, 112),
+            new Color(96, 88, 60, 150),
         );
         void UIBuilder.sprite(panel, "gui/hall/texture/ark-base", new Size(artSize.width, artSize.height), new Vec3(0, -8)).then((sprite) => {
             if (sprite?.node.isValid) sprite.node.name = "ArkHeroArt";
         });
         UIBuilder.label(panel, "ArkTitle", "移动方舟 · 改装运输车", new Size(width - 48, 44), new Vec3(0, height / 2 - 34), 24, UI_THEME.colors.white);
+        const target = intelRuntime.selectedTarget;
+        const summary = UIBuilder.surface(
+            panel,
+            "IntelTargetSummary",
+            new Size(Math.min(width - 72, 470), 92),
+            new Vec3(0, -height / 2 + 92),
+            target ? "card" : "secondary",
+        );
+        void UIBuilder.icon(summary, "system-nav/01-map", 42, new Vec3(-190, 0));
+        UIBuilder.label(
+            summary,
+            "IntelTargetName",
+            target ? target.locationName : "尚未选择探索目标",
+            new Size(250, 34),
+            new Vec3(-28, 20),
+            20,
+            target ? UI_THEME.colors.orange : UI_THEME.colors.muted,
+            HorizontalTextAlignment.LEFT,
+        );
+        const risk = target?.risk === "high" ? "高危" : target?.risk === "medium" ? "中危" : target ? "低危" : "前往情报页规划路线";
+        const rewards = target ? target.rewardLabels.join(" / ") : "大厅出发前必须设定目标";
+        UIBuilder.label(summary, "IntelTargetRisk", `${risk}  ·  ${rewards}`, new Size(350, 30), new Vec3(22, -20), 15, target ? UI_THEME.colors.cyan : UI_THEME.colors.muted, HorizontalTextAlignment.LEFT);
         UIBuilder.label(panel, "ArkHint", "选择功能模块完成整备 · 日落前出发", new Size(width - 50, 34), new Vec3(0, -height / 2 + 27), 17, UI_THEME.colors.muted);
     }
 
     private renderThreat(x: number, y: number, width: number, height: number): void {
         const panel = UIBuilder.surface(this.node, "ThreatSummary", new Size(width, height), new Vec3(x, y), "large");
-        const header = UIBuilder.panel(panel, "ThreatHeader", new Size(width - 30, 46), new Vec3(0, height / 2 - 38), new Color(61, 8, 34, 238), UI_THEME.colors.magenta);
+        const header = UIBuilder.panel(panel, "ThreatHeader", new Size(width - 30, 46), new Vec3(0, height / 2 - 38), new Color(52, 26, 30, 238), UI_THEME.colors.magenta);
         void UIBuilder.icon(header, "hud-combat/04-pollution", 36, new Vec3(-width / 2 + 46, 0));
         UIBuilder.label(header, "ThreatTitle", "次夜尸潮", new Size(width - 86, 38), new Vec3(25, 0), 21, UI_THEME.colors.magenta, HorizontalTextAlignment.LEFT);
 
-        const hazard = UIBuilder.panel(panel, "ThreatHazardPlate", new Size(width - 32, 158), new Vec3(0, height / 2 - 152), new Color(87, 12, 39, 246), UI_THEME.colors.danger);
+        const hazard = UIBuilder.panel(panel, "ThreatHazardPlate", new Size(width - 32, 158), new Vec3(0, height / 2 - 152), new Color(60, 24, 26, 246), UI_THEME.colors.danger);
         UIBuilder.label(hazard, "ThreatWarning", "▲  WARNING  ▲", new Size(width - 60, 22), new Vec3(0, 49), 12, UI_THEME.colors.orange);
         UIBuilder.label(hazard, "ThreatLevel", HALL_DEMO_VIEW_MODEL.threat.level, new Size(width - 58, 36), new Vec3(0, 13), 23, UI_THEME.colors.orange);
         UIBuilder.label(hazard, "ThreatEnemy", HALL_DEMO_VIEW_MODEL.threat.enemy, new Size(width - 58, 42), new Vec3(0, -32), 17, UI_THEME.colors.white);
 
-        const countdown = UIBuilder.panel(panel, "ThreatCountdownModule", new Size(width - 34, 104), new Vec3(0, -height / 2 + 74), new Color(18, 13, 23, 248), new Color(111, 57, 78, 255));
+        const countdown = UIBuilder.panel(panel, "ThreatCountdownModule", new Size(width - 34, 104), new Vec3(0, -height / 2 + 74), new Color(24, 19, 20, 248), new Color(78, 52, 56, 255));
         void UIBuilder.icon(countdown, "hud-combat/04-pollution", 38, new Vec3(-width / 2 + 58, 8));
         UIBuilder.label(countdown, "CountdownLabel", "尸潮抵达", new Size(116, 24), new Vec3(35, 22), 14, UI_THEME.colors.muted, HorizontalTextAlignment.LEFT);
         UIBuilder.label(countdown, "CountdownValue", HALL_DEMO_VIEW_MODEL.threat.countdown, new Size(116, 42), new Vec3(35, -11), 29, UI_THEME.colors.danger, HorizontalTextAlignment.LEFT);
@@ -186,8 +229,8 @@ export class HallViewComp extends GamePage {
 
     private renderStatusModule(parent: Node, name: string, icon: string, label: string, value: number, maximum: number, position: Vec3, color: Color): Node {
         const parentWidth = parent.getComponent(UITransform)?.width ?? 240;
-        const module = UIBuilder.panel(parent, name, new Size(parentWidth - 32, 88), position, new Color(3, 24, 36, 242), new Color(34, 72, 83, 255));
-        const iconChip = UIBuilder.panel(module, `${name}IconChip`, new Size(42, 42), new Vec3(-parentWidth / 2 + 52, 12), new Color(3, 18, 29, 252), UI_THEME.colors.cyanDark);
+        const module = UIBuilder.panel(parent, name, new Size(parentWidth - 32, 88), position, new Color(28, 31, 28, 242), UI_THEME.colors.cyanDark);
+        const iconChip = UIBuilder.panel(module, `${name}IconChip`, new Size(42, 42), new Vec3(-parentWidth / 2 + 52, 12), new Color(20, 22, 20, 252), UI_THEME.colors.cyanDark);
         void UIBuilder.icon(iconChip, icon, 34);
         UIBuilder.label(module, `${name}Label`, label, new Size(100, 26), new Vec3(-6, 20), 15, UI_THEME.colors.muted, HorizontalTextAlignment.LEFT);
         UIBuilder.label(module, `${name}Value`, `${value} / ${maximum}`, new Size(102, 26), new Vec3(50, 20), 16, UI_THEME.colors.white, HorizontalTextAlignment.RIGHT);
@@ -212,7 +255,7 @@ export class HallViewComp extends GamePage {
                 `${name}:${index + 1}`,
                 new Size(segmentWidth, size.height),
                 new Vec3(x, 0),
-                active ? color : new Color(7, 28, 38, 255),
+                active ? color : new Color(26, 28, 26, 255),
                 active ? color : UI_THEME.colors.cyanDark,
             );
         }
@@ -266,7 +309,7 @@ export class HallViewComp extends GamePage {
             `${name}IconChip`,
             new Size(primary ? 58 : 52, primary ? 58 : 52),
             new Vec3(iconX, iconY),
-            primary ? new Color(57, 34, 7, 242) : new Color(3, 25, 37, 242),
+            primary ? new Color(58, 44, 18, 242) : new Color(24, 27, 24, 242),
             primary ? UI_THEME.colors.orange : UI_THEME.colors.cyanDark,
         );
         chip.setSiblingIndex(1);
@@ -285,8 +328,14 @@ export class HallViewComp extends GamePage {
     }
 
     private async depart(): Promise<void> {
-        if (await uiNavigation.replace(UIID.BattleHUD)) {
-            oops.message.dispatchEvent(GameEvent.EnterBattle);
+        const decision = decideIntelDeparture(intelRuntime.selectedTarget);
+        if (decision.destination === "intel") {
+            oops.gui.toast("请先在情报中选择探索目标");
+            await uiNavigation.push(UIID.Intel);
+            return;
+        }
+        if (await uiNavigation.replace(UIID.BattleHUD, { targetId: decision.targetId })) {
+            oops.message.dispatchEvent(GameEvent.EnterBattle, decision.targetId);
         }
     }
 }

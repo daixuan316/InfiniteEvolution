@@ -8,6 +8,13 @@
 
 **Tech Stack:** Cocos Creator 3.8.8, TypeScript ES modules, Oops Framework conventions, Node `--test`, Cocos `resources.load`, deterministic 32-bit hash RNG.
 
+## Implementation Status (2026-11-09)
+
+- Tasks 1–8 are implemented, including deterministic generation, sparse local persistence, 3×3/5×5 streaming, floating-origin rendering, player-centered maps, and modular residential/commercial art.
+- Automated verification is green: `npm run test:battle` (147/147) and `npm run test:ui` (159/159); `git diff --check` is clean.
+- Cocos Creator 3.8.8's bundled TypeScript reports no errors in the files changed for this feature. Full-project type checking remains blocked by pre-existing extension declarations (`JSZip`, Node default imports, and `Logger.logNet`).
+- The manual six-boundary Creator smoke test remains an editor-side follow-up; it was not simulated by the Node test environment.
+
 ## Global Constraints
 
 - Logical cell size remains exactly `96` world units.

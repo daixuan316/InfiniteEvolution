@@ -65,8 +65,8 @@ export class ResearchViewComp extends GamePage {
         this.lastRenderedSecond = Math.floor(now / 1000);
         this.clearBindings();
         const frame = UIBuilder.prepareRoot(this.node);
-        void UIBuilder.backdrop(this.node, "gui/hall/texture/ark-garage", new Size(frame.width + 8, frame.height + 8), new Color(94, 130, 148, 255));
-        UIBuilder.panel(this.node, "ResearchShade", new Size(frame.width + 8, frame.height + 8), Vec3.ZERO, new Color(2, 10, 20, 218), new Color(2, 10, 20, 0));
+        void UIBuilder.backdrop(this.node, "gui/hall/texture/ark-garage", new Size(frame.width + 8, frame.height + 8), new Color(150, 148, 138, 255));
+        UIBuilder.panel(this.node, "ResearchShade", new Size(frame.width + 8, frame.height + 8), Vec3.ZERO, new Color(10, 11, 10, 218), new Color(10, 11, 10, 0));
         this.renderHeader(frame, state, now);
         this.renderWorkspace(frame, state, now);
     }

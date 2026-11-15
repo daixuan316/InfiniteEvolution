@@ -66,11 +66,4 @@ export const FEATURE_DEMO_VIEW_MODELS: Readonly<Partial<Record<UIID, FeatureView
         metrics: [{ label: "幸存者", value: "6" }, { label: "空闲岗位", value: "2" }, { label: "低士气成员", value: "1", tone: "warning" }],
         nextAction: "岗位分配将通过独立成员 ViewModel 接入。",
     },
-    [UIID.Intel]: {
-        title: "地图与情报",
-        summary: "评估地点风险、奖励倾向、撤离距离与次夜尸潮趋势。",
-        icon: "system-nav/01-map",
-        metrics: [{ label: "已知地点", value: "5" }, { label: "高危事件", value: "1", tone: "danger" }, { label: "可用白昼", value: "06:30" }],
-        nextAction: "从这里选择探索目标后再确认出发。",
-    },
 };

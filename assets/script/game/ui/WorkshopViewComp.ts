@@ -2,9 +2,13 @@ import { Color, HorizontalTextAlignment, Label, Size, Vec3, _decorator } from "c
 
 import { oops } from "../../../../extensions/oops-plugin-framework/assets/core/Oops";
 import { workshopRuntime } from "../bag/WorkshopRuntimeProvider";
+import { EQUIPMENT_CATALOG } from "../equipment/config/EquipmentCatalog.ts";
+import { WorkshopPresenter, type WorkshopMode } from "../equipment/view/WorkshopPresenter.ts";
+import { persistentEquipmentRuntime } from "../save/SaveModule.ts";
 import { ITEM_DEFINITIONS, WORKSHOP_RECIPES } from "../bag/workshop/WorkshopCatalog.ts";
 import { actionTextForReason, formatRemainingTime, materialRequirementLayout } from "../bag/workshop/WorkshopPresentation.ts";
 import type { EnqueueFailure, WorkshopCategory, WorkshopRecipe, WorkshopTask } from "../bag/workshop/WorkshopTypes.ts";
+import { UIID } from "../common/config/GameUIConfig";
 import { GamePage } from "../common/ui/GamePage";
 import type { SafeFrame } from "../common/ui/UIBuilder";
 import { UIBuilder } from "../common/ui/UIBuilder";
@@ -37,6 +41,9 @@ export class WorkshopViewComp extends GamePage {
     private selectedRecipeId = WORKSHOP_RECIPES[0].id;
     private refreshElapsed = 0;
     private queueLabels: Label[] = [];
+    private equipmentMode: WorkshopMode = "craft";
+    private equipmentBlueprints = false;
+    private equipmentPresenter = new WorkshopPresenter(persistentEquipmentRuntime(), EQUIPMENT_CATALOG);
 
     protected start(): void {
         workshopRuntime.sync();
@@ -56,8 +63,8 @@ export class WorkshopViewComp extends GamePage {
         this.clearBindings();
         this.queueLabels = [];
         const frame = UIBuilder.prepareRoot(this.node);
-        void UIBuilder.backdrop(this.node, "gui/hall/texture/ark-garage", new Size(frame.width + 8, frame.height + 8), new Color(118, 138, 158, 255));
-        UIBuilder.panel(this.node, "WorkshopShade", new Size(frame.width + 8, frame.height + 8), Vec3.ZERO, new Color(2, 10, 20, 218), new Color(2, 10, 20, 0));
+        void UIBuilder.backdrop(this.node, "gui/hall/texture/ark-garage", new Size(frame.width + 8, frame.height + 8), new Color(150, 148, 138, 255));
+        UIBuilder.panel(this.node, "WorkshopShade", new Size(frame.width + 8, frame.height + 8), Vec3.ZERO, new Color(10, 11, 10, 218), new Color(10, 11, 10, 0));
         this.renderHeader(frame);
         this.renderWorkspace(frame);
     }
@@ -68,10 +75,42 @@ export class WorkshopViewComp extends GamePage {
         this.bindTouch(back, () => { void uiNavigation.back(); });
         void UIBuilder.icon(header, "system-nav/03-workshop", 50, new Vec3(-112, 0));
         UIBuilder.label(header, "PageTitle", "工坊制造", new Size(390, 52), new Vec3(106, 0), 30, UI_THEME.colors.white, HorizontalTextAlignment.LEFT);
+        const blueprints = UIBuilder.button(header, "BtnEquipmentBlueprints", this.equipmentBlueprints ? "返回补给队列" : "装备蓝图", new Size(176, 54), new Vec3(frame.width / 2 - 132, 0), this.equipmentBlueprints);
+        this.bindTouch(blueprints, () => {
+            this.equipmentMode = "craft";
+            this.equipmentPresenter.setMode("craft");
+            this.equipmentBlueprints = !this.equipmentBlueprints;
+            this.render();
+        });
     }
 
     private renderWorkspace(frame: SafeFrame): void {
-        const top = frame.top - 92;
+        const tabs: Array<{ name: string; label: string; mode: WorkshopMode }> = [
+            { name: "TabCraft", label: "制造", mode: "craft" },
+            { name: "TabStrengthen", label: "强化", mode: "strengthen" },
+            { name: "TabSynchronize", label: "同步", mode: "synchronize" },
+            { name: "TabReroll", label: "改装", mode: "reroll" },
+            { name: "TabSalvage", label: "拆解", mode: "salvage" },
+        ];
+        tabs.forEach((tab, index) => {
+            const button = UIBuilder.slot(this.node, tab.name, new Size(150, 52), new Vec3((index - 2) * 158, frame.top - 112), tab.mode === this.equipmentMode);
+            UIBuilder.label(button, `${tab.name}Label`, tab.label, new Size(132, 28), Vec3.ZERO, 17, tab.mode === this.equipmentMode ? UI_THEME.colors.orange : UI_THEME.colors.white);
+            this.bindTouch(button, () => {
+                this.equipmentMode = tab.mode;
+                this.equipmentPresenter.setMode(tab.mode);
+                if (tab.mode !== "craft") this.equipmentBlueprints = false;
+                this.render();
+            });
+        });
+        if (this.equipmentMode === "craft" && this.equipmentBlueprints) {
+            this.renderEquipmentCraft(frame);
+            return;
+        }
+        if (this.equipmentMode !== "craft") {
+            this.renderEquipmentOperations(frame);
+            return;
+        }
+        const top = frame.top - 146;
         const bottom = frame.bottom + 18;
         const height = top - bottom;
         const y = (top + bottom) / 2;
@@ -86,6 +125,95 @@ export class WorkshopViewComp extends GamePage {
         this.renderRecipeRail(leftX, y, leftWidth, height);
         this.renderRecipePreview(centerX, y, centerWidth, height);
         this.renderQueuePanel(rightX, y, rightWidth, height);
+    }
+
+    private renderEquipmentCraft(frame: SafeFrame): void {
+        const model = this.equipmentPresenter.setMode("craft").view();
+        const top = frame.top - 146;
+        const bottom = frame.bottom + 18;
+        const height = top - bottom;
+        const y = (top + bottom) / 2;
+        const leftWidth = Math.min(430, frame.width * 0.35);
+        const rightWidth = frame.width - UI_THEME.safeMargin * 2 - leftWidth - 12;
+        const left = UIBuilder.surface(this.node, "EquipmentBlueprintList", new Size(leftWidth, height), new Vec3(frame.left + leftWidth / 2, y), "large");
+        UIBuilder.label(left, "EquipmentBlueprintTitle", "九类武器蓝图", new Size(leftWidth - 30, 38), new Vec3(0, height / 2 - 30), 22, UI_THEME.colors.white);
+        model.recipes.forEach((recipe, index) => {
+            const column = index % 2;
+            const row = Math.floor(index / 2);
+            const selected = model.selectedRecipe?.id === recipe.id;
+            const button = UIBuilder.slot(left, `EquipmentRecipe-${recipe.id}`, new Size((leftWidth - 44) / 2, 72), new Vec3((column === 0 ? -1 : 1) * (leftWidth - 30) / 4, height / 2 - 88 - row * 78), selected);
+            UIBuilder.label(button, `EquipmentRecipeName-${recipe.id}`, recipe.name, new Size((leftWidth - 66) / 2, 48), Vec3.ZERO, 15, selected ? UI_THEME.colors.orange : UI_THEME.colors.white);
+            this.bindTouch(button, () => { this.equipmentPresenter.selectRecipe(recipe.id); this.render(); });
+        });
+
+        const details = UIBuilder.surface(this.node, "EquipmentBlueprintDetails", new Size(rightWidth, height), new Vec3(frame.right - rightWidth / 2, y), "large");
+        const recipe = model.selectedRecipe;
+        UIBuilder.label(details, "EquipmentBlueprintName", recipe?.name ?? "未选择蓝图", new Size(rightWidth - 50, 52), new Vec3(0, height / 2 - 42), 28, UI_THEME.colors.orange);
+        const costs = recipe ? Object.entries(recipe.costs).map(([id, amount]) => `${this.materialName(id)} ${model.materials[id as keyof typeof model.materials]} / ${amount}`).join("\n") : "";
+        UIBuilder.label(details, "EquipmentBlueprintCosts", costs, new Size(rightWidth - 100, 190), new Vec3(0, 65), 21, model.action.enabled ? UI_THEME.colors.cyan : UI_THEME.colors.danger, HorizontalTextAlignment.LEFT);
+        UIBuilder.label(details, "EquipmentBlueprintCapacity", `仓库容量 ${model.instances.length} / ${persistentEquipmentRuntime().snapshot().capacity}\n工坊等级 ${persistentEquipmentRuntime().snapshot().workshopLevel}`, new Size(rightWidth - 100, 70), new Vec3(0, -85), 18, UI_THEME.colors.muted, HorizontalTextAlignment.LEFT);
+        if (!model.action.enabled) UIBuilder.label(details, "EquipmentCraftBlocked", model.action.reason, new Size(rightWidth - 80, 38), new Vec3(0, -145), 18, UI_THEME.colors.danger);
+        const action = UIBuilder.navButton(details, "BtnConfirmEquipmentCraft", model.action.enabled ? "制造并存入装备仓库" : "当前无法制造", "system-nav/14-confirm", new Size(Math.min(430, rightWidth - 100), 78), new Vec3(0, -height / 2 + 58), model.action.enabled);
+        this.bindTouch(action, () => {
+            const result = this.equipmentPresenter.confirm();
+            oops.gui.toast(result.ok === true ? `${recipe?.name ?? "装备"} 制造完成` : `制造失败：${result.error}`);
+            this.render();
+        });
+    }
+
+    private materialName(id: string): string {
+        return ({ gold: "金币", scrap: "废料", parts: "零件", electronics: "电子元件", tissue: "异化组织", tagSample: "标签样本", evolutionSample: "进化样本" } as Record<string, string>)[id] ?? id;
+    }
+
+    private renderEquipmentOperations(frame: SafeFrame): void {
+        const model = this.equipmentPresenter.view();
+        const top = frame.top - 146;
+        const bottom = frame.bottom + 18;
+        const height = top - bottom;
+        const y = (top + bottom) / 2;
+        const leftWidth = Math.min(440, frame.width * 0.36);
+        const rightWidth = frame.width - UI_THEME.safeMargin * 2 - leftWidth - 12;
+        const leftX = frame.left + leftWidth / 2;
+        const rightX = frame.right - rightWidth / 2;
+        const inventory = UIBuilder.surface(this.node, "EquipmentOperationInventory", new Size(leftWidth, height), new Vec3(leftX, y), "large");
+        UIBuilder.label(inventory, "OperationInventoryTitle", "选择装备", new Size(leftWidth - 30, 34), new Vec3(0, height / 2 - 28), 21, UI_THEME.colors.white);
+        model.instances.slice(0, 12).forEach((item, index) => {
+            const column = index % 2;
+            const row = Math.floor(index / 2);
+            const selected = model.selectedInstance?.instanceId === item.instanceId;
+            const card = UIBuilder.slot(inventory, `WorkshopEquipment-${item.instanceId}`, new Size((leftWidth - 44) / 2, 64), new Vec3((column === 0 ? -1 : 1) * (leftWidth - 30) / 4, height / 2 - 82 - row * 70), selected);
+            UIBuilder.label(card, `WorkshopEquipmentName-${item.instanceId}`, `${item.name}  Lv.${item.level} +${item.strengthen}`, new Size((leftWidth - 70) / 2, 42), Vec3.ZERO, 14, selected ? UI_THEME.colors.orange : UI_THEME.colors.white);
+            this.bindTouch(card, () => { this.equipmentPresenter.selectInstance(item.instanceId); this.render(); });
+        });
+        const details = UIBuilder.surface(this.node, "EquipmentOperationDetails", new Size(rightWidth, height), new Vec3(rightX, y), "large");
+        const selected = model.selectedInstance;
+        const title = this.equipmentMode === "strengthen" ? "装备强化" : this.equipmentMode === "synchronize" ? "等级同步" : this.equipmentMode === "reroll" ? "词条改装" : "装备拆解";
+        UIBuilder.label(details, "OperationTitle", title, new Size(rightWidth - 36, 44), new Vec3(0, height / 2 - 34), 25, UI_THEME.colors.white);
+        UIBuilder.label(details, "OperationSelection", selected ? `${model.instances.find((item) => item.instanceId === selected.instanceId)?.name ?? selected.templateId}\n等级 ${selected.level} · 强化 +${selected.strengthen}\n${selected.affixIds.length} 条词条 · ${selected.evolutionId ? "已进化" : "未进化"}` : "未选择装备", new Size(rightWidth - 70, 118), new Vec3(0, height / 2 - 125), 20, UI_THEME.colors.cyan);
+        UIBuilder.label(details, "OperationMaterials", `金币 ${model.materials.gold}    废料 ${model.materials.scrap}    零件 ${model.materials.parts}\n电子元件 ${model.materials.electronics}    标签样本 ${model.materials.tagSample}`, new Size(rightWidth - 70, 74), new Vec3(0, 30), 18, UI_THEME.colors.muted);
+        if (!model.action.enabled) UIBuilder.label(details, "OperationBlockedReason", model.action.reason, new Size(rightWidth - 70, 42), new Vec3(0, -55), 18, UI_THEME.colors.danger);
+        const actionLabel = this.equipmentMode === "strengthen" ? "确认强化" : this.equipmentMode === "synchronize" ? "确认同步" : this.equipmentMode === "reroll" ? "确认改装" : "确认拆解";
+        const actionName = this.equipmentMode === "salvage" ? "BtnConfirmProtectedSalvage" : "BtnConfirmWorkshop";
+        const action = UIBuilder.navButton(details, actionName, model.action.enabled ? actionLabel : `${actionLabel}·不可用`, "system-nav/14-confirm", new Size(rightWidth - 72, 76), new Vec3(0, -height / 2 + 58), model.action.enabled);
+        this.bindTouch(action, () => {
+            if (this.equipmentMode === "salvage" && selected) {
+                void uiNavigation.openOverlay(UIID.ConfirmDialog, {
+                    title: "确认拆解装备",
+                    message: "高品质装备也将被拆解，材料会立即存入仓库。",
+                    confirmText: "确认拆解",
+                    cancelText: "取消",
+                    onConfirm: () => {
+                        const result = persistentEquipmentRuntime().salvage(selected.instanceId, true);
+                        oops.gui.toast(result.ok === true ? "装备拆解成功" : `拆解失败：${result.error}`);
+                        this.render();
+                    },
+                });
+                return;
+            }
+            const result = this.equipmentPresenter.confirm();
+            oops.gui.toast("error" in result ? `操作失败：${result.error}` : `${title}成功`);
+            this.render();
+        });
     }
 
     private renderRecipeRail(x: number, y: number, width: number, height: number): void {

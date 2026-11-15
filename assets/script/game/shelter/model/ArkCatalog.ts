@@ -50,9 +50,9 @@ function emptyLayout(): ArkLayoutState {
     return { slots: Object.fromEntries(ARK_SLOTS.map((slot) => [slot.id, null])) };
 }
 
-function instance(instanceId: string, definitionId: string, priority: ArkModuleInstance["priority"]): ArkModuleInstance {
+function instance(instanceId: string, definitionId: string, priority: ArkModuleInstance["priority"], commissioned = false): ArkModuleInstance {
     const definition = arkModuleById(definitionId)!;
-    return { instanceId, definitionId, durability: definition.maxDurability, priority, evolutionId: null, commissioned: true };
+    return { instanceId, definitionId, durability: definition.maxDurability, priority, evolutionId: null, commissioned };
 }
 
 export function createDefaultArkState(): ArkState {
@@ -64,11 +64,11 @@ export function createDefaultArkState(): ArkState {
         schemaVersion: 1,
         resources: { scrap: 368, parts: 80, alloy: 72, energyCell: 12, mutationCore: 2 },
         modules: [
-            instance("armor-1", "armor-plate", "important"),
+            instance("armor-1", "armor-plate", "important", true),
             instance("barricade-1", "barricade", "normal"),
-            instance("generator-1", "generator", "core"),
+            instance("generator-1", "generator", "core", true),
             instance("battery-1", "battery", "important"),
-            instance("turret-mg-1", "machine-gun-turret", "important"),
+            instance("turret-mg-1", "machine-gun-turret", "important", true),
             instance("turret-shotgun-1", "shotgun-turret", "normal"),
             instance("grid-1", "electric-grid", "normal"),
             instance("repair-drone-1", "repair-drone", "important"),

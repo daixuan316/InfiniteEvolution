@@ -11,8 +11,8 @@ export interface InfiniteDistrictPresentation {
 const DISTRICTS: Readonly<Record<DistrictKind, InfiniteDistrictPresentation>> = {
     residential: {
         label: "住宅区",
-        accent: [32, 211, 238, 255],
-        tint: [13, 94, 112, 32],
+        accent: [104, 180, 168, 255],
+        tint: [30, 44, 40, 32],
     },
     community: {
         label: "社区商业区",

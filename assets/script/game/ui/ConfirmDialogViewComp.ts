@@ -26,7 +26,7 @@ export class ConfirmDialogViewComp extends GamePage {
     private render(): void {
         const frame = UIBuilder.prepareRoot(this.node);
         const data = this.params as unknown as ConfirmDialogParams;
-        UIBuilder.panel(this.node, "DialogShade", new Size(frame.width + 8, frame.height + 8), Vec3.ZERO, new Color(1, 5, 9, 190), UI_THEME.colors.black);
+        UIBuilder.panel(this.node, "DialogShade", new Size(frame.width + 8, frame.height + 8), Vec3.ZERO, new Color(10, 11, 10, 190), UI_THEME.colors.black);
         const dialog = UIBuilder.surface(this.node, "DialogPanel", new Size(610, 330), Vec3.ZERO, "large");
         UIBuilder.label(dialog, "DialogTitle", data.title, new Size(520, 58), new Vec3(0, 100), 30, UI_THEME.colors.orange);
         UIBuilder.label(dialog, "DialogMessage", data.message, new Size(510, 90), new Vec3(0, 30), 21, UI_THEME.colors.white);

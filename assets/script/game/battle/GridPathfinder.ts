@@ -4,6 +4,9 @@ export interface WalkableGrid {
     readonly columns: number;
     readonly rows: number;
     readonly infinite?: boolean;
+    navigationBounds?(): { minX: number; maxX: number; minY: number; maxY: number };
+    navigationWaypoint?(start: GridPoint, goal: GridPoint): GridPoint | null;
+    isNavigationCellReady?(cell: GridPoint): boolean;
     isWalkable(cell: GridPoint): boolean;
 }
 
@@ -37,13 +40,15 @@ export class GridPathfinder {
     }
 
     findPath(start: GridPoint, goal: GridPoint): GridPoint[] {
-        if (!this.grid.isWalkable(start) || !this.grid.isWalkable(goal)) return [];
+        const navigationBounds = this.grid.navigationBounds?.();
+        if (navigationBounds && (goal.x < navigationBounds.minX || goal.x > navigationBounds.maxX || goal.y < navigationBounds.minY || goal.y > navigationBounds.maxY)) return [];
+        if (!this.isWalkable(start) || !this.isWalkable(goal)) return [];
         const margin = 16;
         const searchBounds = this.grid.infinite ? {
-            minX: Math.min(start.x, goal.x) - margin,
-            maxX: Math.max(start.x, goal.x) + margin,
-            minY: Math.min(start.y, goal.y) - margin,
-            maxY: Math.max(start.y, goal.y) + margin,
+            minX: Math.max(navigationBounds?.minX ?? Number.NEGATIVE_INFINITY, Math.min(start.x, goal.x) - margin),
+            maxX: Math.min(navigationBounds?.maxX ?? Number.POSITIVE_INFINITY, Math.max(start.x, goal.x) + margin),
+            minY: Math.max(navigationBounds?.minY ?? Number.NEGATIVE_INFINITY, Math.min(start.y, goal.y) - margin),
+            maxY: Math.min(navigationBounds?.maxY ?? Number.POSITIVE_INFINITY, Math.max(start.y, goal.y) + margin),
         } : null;
         const startKey = key(start);
         const goalKey = key(goal);
@@ -67,10 +72,10 @@ export class GridPathfinder {
             for (const direction of DIRECTIONS) {
                 const next = { x: current.x + direction.x, y: current.y + direction.y };
                 if (searchBounds && (next.x < searchBounds.minX || next.x > searchBounds.maxX || next.y < searchBounds.minY || next.y > searchBounds.maxY)) continue;
-                if (!this.grid.isWalkable(next)) continue;
+                if (!this.isWalkable(next)) continue;
                 if (direction.x !== 0 && direction.y !== 0) {
-                    if (!this.grid.isWalkable({ x: current.x + direction.x, y: current.y }) ||
-                        !this.grid.isWalkable({ x: current.x, y: current.y + direction.y })) continue;
+                    if (!this.isWalkable({ x: current.x + direction.x, y: current.y }) ||
+                        !this.isWalkable({ x: current.x, y: current.y + direction.y })) continue;
                 }
                 const nextKey = key(next);
                 if (closed.has(nextKey)) continue;
@@ -85,18 +90,25 @@ export class GridPathfinder {
     }
 
     findPathToNearest(start: GridPoint, requestedGoal: GridPoint): GridPoint[] {
-        if (!this.grid.isWalkable(start)) return [];
+        if (!this.isWalkable(start)) return [];
         if (this.grid.infinite) {
+            const bounds = this.grid.navigationBounds?.();
+            const strategicGoal = this.grid.navigationWaypoint?.(start, requestedGoal);
+            const boundedGoal = strategicGoal ?? (bounds ? {
+                x: Math.max(bounds.minX, Math.min(bounds.maxX, requestedGoal.x)),
+                y: Math.max(bounds.minY, Math.min(bounds.maxY, requestedGoal.y)),
+            } : requestedGoal);
             for (let radius = 0; radius <= 12; radius++) {
                 const candidates: GridPoint[] = [];
-                for (let y = requestedGoal.y - radius; y <= requestedGoal.y + radius; y++) {
-                    for (let x = requestedGoal.x - radius; x <= requestedGoal.x + radius; x++) {
-                        if (Math.max(Math.abs(x - requestedGoal.x), Math.abs(y - requestedGoal.y)) !== radius) continue;
+                for (let y = boundedGoal.y - radius; y <= boundedGoal.y + radius; y++) {
+                    for (let x = boundedGoal.x - radius; x <= boundedGoal.x + radius; x++) {
+                        if (Math.max(Math.abs(x - boundedGoal.x), Math.abs(y - boundedGoal.y)) !== radius) continue;
+                        if (bounds && (x < bounds.minX || x > bounds.maxX || y < bounds.minY || y > bounds.maxY)) continue;
                         const cell = { x, y };
-                        if (this.grid.isWalkable(cell)) candidates.push(cell);
+                        if (this.isWalkable(cell)) candidates.push(cell);
                     }
                 }
-                candidates.sort((a, b) => octile(a, requestedGoal) - octile(b, requestedGoal));
+                candidates.sort((a, b) => octile(a, boundedGoal) - octile(b, boundedGoal));
                 for (const candidate of candidates) {
                     const path = this.findPath(start, candidate);
                     if (path.length > 0) return path;
@@ -127,5 +139,9 @@ export class GridPathfinder {
             path.push({ x: cursor.x, y: cursor.y });
         }
         return path.reverse();
+    }
+
+    private isWalkable(cell: GridPoint): boolean {
+        return (this.grid.isNavigationCellReady?.(cell) ?? true) && this.grid.isWalkable(cell);
     }
 }

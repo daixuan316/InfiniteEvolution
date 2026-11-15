@@ -1,7 +1,7 @@
 import { GENERATION_VERSION, type ChunkKey } from "./InfiniteWorldTypes.ts";
 import { parseChunkKey } from "./WorldSeed.ts";
 
-export const WORLD_DELTA_SCHEMA_VERSION = 1;
+export const WORLD_DELTA_SCHEMA_VERSION = 2;
 
 export interface WorldObjectDelta {
     readonly opened?: boolean;
@@ -23,6 +23,22 @@ export interface WorldDeltaSnapshotV1 {
     worldSeed: number;
     chunks: Record<string, Record<string, WorldObjectDelta>>;
     discoveredLandmarks: string[];
+}
+
+export interface WorldDeltaSnapshotV2 {
+    schemaVersion: 2;
+    generationVersion: number;
+    worldSeed: number;
+    playerPosition: { x: number; y: number } | null;
+    discoveredChunks: string[];
+    discoveredMap?: Record<string, DiscoveredChunkMap>;
+    chunks: Record<string, Record<string, WorldObjectDelta>>;
+    discoveredLandmarks: string[];
+}
+
+export interface DiscoveredChunkMap {
+    readonly roadCells: readonly { readonly x: number; readonly y: number }[];
+    readonly landmarkIds: readonly string[];
 }
 
 function requireObjectId(value: string): string {
@@ -63,6 +79,9 @@ export class WorldDeltaStore {
     readonly worldSeed: number;
     private readonly chunkDeltas = new Map<ChunkKey, Map<string, WorldObjectDelta>>();
     private readonly discoveredLandmarks = new Set<string>();
+    private readonly discoveredChunks = new Set<ChunkKey>();
+    private readonly discoveredMap = new Map<ChunkKey, DiscoveredChunkMap>();
+    private permanentPlayerPosition: { x: number; y: number } | null = null;
 
     constructor(worldSeed: number) {
         if (!Number.isFinite(worldSeed)) throw new RangeError("world seed must be finite");
@@ -105,7 +124,41 @@ export class WorldDeltaStore {
         return this.discoveredLandmarks.has(id);
     }
 
-    snapshot(): WorldDeltaSnapshotV1 {
+    markChunkDiscovered(key: ChunkKey | string, summary?: DiscoveredChunkMap): void {
+        parseChunkKey(key);
+        const typedKey = key as ChunkKey;
+        this.discoveredChunks.add(typedKey);
+        if (summary) {
+            this.discoveredMap.set(typedKey, {
+                roadCells: summary.roadCells.map((cell) => ({ x: cell.x, y: cell.y })),
+                landmarkIds: [...summary.landmarkIds],
+            });
+        }
+    }
+
+    discoveredChunkKeys(): ChunkKey[] {
+        return [...this.discoveredChunks].sort();
+    }
+
+    discoveredChunkMap(key: ChunkKey | string): DiscoveredChunkMap | undefined {
+        parseChunkKey(key);
+        const summary = this.discoveredMap.get(key as ChunkKey);
+        return summary ? {
+            roadCells: summary.roadCells.map((cell) => ({ ...cell })),
+            landmarkIds: [...summary.landmarkIds],
+        } : undefined;
+    }
+
+    setPlayerPosition(position: { x: number; y: number }): void {
+        if (!Number.isFinite(position.x) || !Number.isFinite(position.y)) throw new RangeError("player position must be finite");
+        this.permanentPlayerPosition = { x: position.x, y: position.y };
+    }
+
+    playerPosition(): { x: number; y: number } | null {
+        return this.permanentPlayerPosition ? { ...this.permanentPlayerPosition } : null;
+    }
+
+    snapshot(): WorldDeltaSnapshotV2 {
         const chunks: Record<string, Record<string, WorldObjectDelta>> = Object.create(null);
         for (const [key, entries] of this.chunkDeltas) {
             const serializedEntries: Record<string, WorldObjectDelta> = Object.create(null);
@@ -116,6 +169,12 @@ export class WorldDeltaStore {
             schemaVersion: WORLD_DELTA_SCHEMA_VERSION,
             generationVersion: GENERATION_VERSION,
             worldSeed: this.worldSeed,
+            playerPosition: this.playerPosition(),
+            discoveredChunks: this.discoveredChunkKeys(),
+            discoveredMap: Object.fromEntries([...this.discoveredMap].map(([key, summary]) => [key, {
+                roadCells: summary.roadCells.map((cell) => ({ ...cell })),
+                landmarkIds: [...summary.landmarkIds],
+            }])),
             chunks,
             discoveredLandmarks: [...this.discoveredLandmarks].sort(),
         };
@@ -123,8 +182,11 @@ export class WorldDeltaStore {
 
     static restore(value: unknown): WorldDeltaStore {
         if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("world delta snapshot must be an object");
-        const snapshot = value as Partial<WorldDeltaSnapshotV1>;
-        if (snapshot.schemaVersion !== WORLD_DELTA_SCHEMA_VERSION) throw new Error(`unsupported world delta schema: ${snapshot.schemaVersion}`);
+        const snapshot = value as Partial<WorldDeltaSnapshotV1> | Partial<WorldDeltaSnapshotV2>;
+        const schemaVersion = (value as { schemaVersion?: unknown }).schemaVersion;
+        if (schemaVersion !== 1 && schemaVersion !== WORLD_DELTA_SCHEMA_VERSION) {
+            throw new Error(`unsupported world delta schema: ${schemaVersion}`);
+        }
         if (snapshot.generationVersion !== GENERATION_VERSION) throw new Error(`unsupported generation version: ${snapshot.generationVersion}`);
         if (!Number.isFinite(snapshot.worldSeed)) throw new Error("world delta seed must be finite");
         if (!snapshot.chunks || typeof snapshot.chunks !== "object" || Array.isArray(snapshot.chunks)) throw new Error("world delta chunks must be an object");
@@ -135,10 +197,31 @@ export class WorldDeltaStore {
             parseChunkKey(key);
             if (!entries || typeof entries !== "object" || Array.isArray(entries)) throw new Error(`chunk delta must be an object: ${key}`);
             for (const [objectId, delta] of Object.entries(entries)) store.setObjectDelta(key, objectId, validateDelta(delta));
+            if (schemaVersion === 1) store.markChunkDiscovered(key);
         }
         for (const landmarkId of snapshot.discoveredLandmarks) {
             if (typeof landmarkId !== "string") throw new Error("landmark id must be a string");
             store.markLandmarkDiscovered(landmarkId);
+        }
+        if (schemaVersion === WORLD_DELTA_SCHEMA_VERSION) {
+            const current = snapshot as Partial<WorldDeltaSnapshotV2>;
+            if (!Array.isArray(current.discoveredChunks)) throw new Error("discovered chunks must be an array");
+            for (const key of current.discoveredChunks) {
+                if (typeof key !== "string") throw new Error("discovered chunk key must be a string");
+                const summary = current.discoveredMap?.[key];
+                if (summary) {
+                    if (!Array.isArray(summary.roadCells) || !Array.isArray(summary.landmarkIds)) throw new Error("discovered map summary is invalid");
+                    for (const cell of summary.roadCells) {
+                        if (!cell || !Number.isInteger(cell.x) || !Number.isInteger(cell.y)) throw new Error("discovered road cell is invalid");
+                    }
+                    if (summary.landmarkIds.some((id) => typeof id !== "string")) throw new Error("discovered landmark id is invalid");
+                }
+                store.markChunkDiscovered(key, summary);
+            }
+            if (current.playerPosition !== null) {
+                if (!current.playerPosition || typeof current.playerPosition !== "object") throw new Error("player position must be an object or null");
+                store.setPlayerPosition(current.playerPosition);
+            }
         }
         return store;
     }

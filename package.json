@@ -11,6 +11,7 @@
   "scripts": {
     "test:battle": "node --test tests/unit/combat/*.test.mjs tests/unit/shelter/*.test.mjs tests/unit/battle/*.test.mjs tests/unit/monster/*.test.mjs tests/unit/research/*.test.mjs tests/unit/world/*.test.mjs",
     "test:ui": "node --test tests/unit/ui/*.test.mjs tests/unit/battle/*.test.mjs tests/unit/research/*.test.mjs tests/integration/ui/*.test.mjs",
+    "test:intel": "node --test tests/unit/intel/*.test.mjs tests/integration/ui/BattleFlowBindings.test.mjs tests/integration/ui/UIViewBindings.test.mjs tests/integration/ui/UIVisualComposition.test.mjs",
     "test:workshop": "node --test tests/unit/bag/*.test.mjs tests/integration/ui/WorkshopBindings.test.mjs"
   },
   "type": "module",

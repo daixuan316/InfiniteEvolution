@@ -1,4 +1,4 @@
-import type { BattleMapDefinition, GridPoint, WorldPoint } from "../../battle/BattleMapModel";
+import type { BattleMapDefinition, GridPoint, WorldPoint } from "../../battle/BattleMapModel.ts";
 
 export type IntelTargetId = "hospital" | "depot" | "signal";
 export type IntelRisk = "low" | "medium" | "high";
