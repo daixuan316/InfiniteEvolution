@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>无限进化·末世生存 — 新版 UI 预览</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%231F2220'/%3E%3Cpath d='M7 15l5-8 5 8z' fill='%23D8A652'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#111312; --panel:#1F2220; --panel-soft:#2C302C; --black:#0B0C0A;
+    --amber:#D8A652; --teal:#68B4A8; --orange:#D68A42; --magenta:#C65482;
+    --danger:#C64A42; --success:#60B276; --white:#E9E6DC; --muted:#979A90;
+    --radius:14px; --radius-sm:8px; --stroke:rgba(104,180,168,.28);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--white);font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;line-height:1.5;padding:28px 22px 60px}
+  .wrap{max-width:1380px;margin:0 auto}
+  header h1{font-size:26px;font-weight:700;letter-spacing:.5px}
+  header p{color:var(--muted);margin-top:8px;font-size:15px;max-width:760px}
+  .swatches{display:flex;flex-wrap:wrap;gap:14px;margin:22px 0 10px}
+  .sw{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+  .sw i{width:26px;height:26px;border-radius:7px;border:1px solid rgba(255,255,255,.12);display:block}
+  .gallery{display:grid;grid-template-columns:1fr;gap:26px;margin-top:26px}
+  @media(min-width:1100px){.gallery{grid-template-columns:1fr 1fr}}
+  .mock{background:var(--panel);border:1px solid var(--stroke);border-radius:var(--radius);overflow:hidden}
+  .mock h2{font-size:15px;font-weight:600;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;justify-content:space-between;align-items:center}
+  .mock h2 span{color:var(--muted);font-weight:400;font-size:12px}
+  .screen{aspect-ratio:1334/750;width:100%;padding:16px;display:flex;flex-direction:column;gap:12px}
+
+  /* 通用组件 */
+  .plate{background:var(--panel-soft);border:1px solid var(--stroke);border-radius:var(--radius);padding:12px}
+  .row{display:flex;gap:12px}
+  .grow{flex:1;min-width:0}
+  .title{font-size:16px;font-weight:600}
+  .sub{font-size:12px;color:var(--muted)}
+  .num{font-size:20px;font-weight:700;color:var(--white)}
+  .tag{font-size:12px;color:var(--amber)}
+  .bar{height:10px;background:var(--black);border:1px solid var(--stroke);border-radius:6px;overflow:hidden;margin-top:6px}
+  .bar i{display:block;height:100%;border-radius:5px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--panel-soft);border:1px solid var(--stroke);color:var(--white);
+    border-radius:var(--radius-sm);font-size:15px;font-weight:500;padding:12px 18px;cursor:pointer;transition:transform .12s ease,filter .12s ease;min-height:44px}
+  .btn:active{transform:scale(.96);filter:brightness(1.2)}
+  .btn-primary{background:#4A3816;border-color:var(--amber);color:var(--amber)}
+  .nav{display:flex;flex-direction:column;align-items:center;gap:6px;width:86px;padding:12px 6px;background:var(--panel-soft);border:1px solid var(--stroke);border-radius:var(--radius-sm);cursor:pointer;transition:transform .12s ease}
+  .nav:active{transform:scale(.96)}
+  .nav .ic{width:30px;height:30px}
+  .nav small{font-size:12px;color:var(--muted)}
+  .ic{width:26px;height:26px;fill:var(--muted)}
+
+  /* 基地整备 */
+  .hall-top{display:flex;justify-content:space-between;align-items:center;gap:14px}
+  .chap{display:flex;align-items:center;gap:10px}
+  .badge{width:38px;height:38px;border-radius:9px;background:var(--black);border:1px solid var(--stroke);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--amber)}
+  .res{display:flex;gap:16px;background:var(--panel-soft);border:1px solid var(--stroke);border-radius:var(--radius-sm);padding:10px 16px}
+  .res div{text-align:right}
+  .res .sub{font-size:11px}
+  .hall-body{flex:1;display:grid;grid-template-columns:230px 1fr 230px;gap:12px;min-height:0}
+  .col{display:flex;flex-direction:column;gap:12px}
+  .status-mod{background:var(--panel-soft);border:1px solid var(--stroke);border-radius:var(--radius);padding:12px}
+  .status-mod .line{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .hero{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:radial-gradient(circle at 50% 40%,rgba(216,166,82,.12),transparent 60%);border:1px dashed var(--stroke);border-radius:var(--radius)}
+  .hero .art{width:52%;height:46%;background:var(--black);border-radius:var(--radius-sm);border:1px solid var(--stroke)}
+  .threat-head{background:#341A1E;border:1px solid var(--magenta);border-radius:var(--radius-sm);padding:10px 12px;display:flex;align-items:center;gap:10px}
+  .hazard{background:#3C181A;border:1px solid var(--danger);border-radius:var(--radius-sm);padding:16px 12px;text-align:center}
+  .hazard .warn{font-size:12px;color:var(--orange);letter-spacing:2px}
+  .countdown{background:#181314;border:1px solid rgba(198,84,130,.4);border-radius:var(--radius-sm);padding:12px}
+  .hall-nav{display:flex;gap:10px;justify-content:space-between}
+
+  /* 战斗 HUD */
+  .hud-top{display:flex;justify-content:space-between;align-items:flex-start}
+  .status-stack{display:flex;flex-direction:column;gap:10px;width:300px}
+  .weapon{display:flex;justify-content:space-between;align-items:center;background:var(--panel-soft);border:1px solid var(--stroke);border-radius:var(--radius);padding:10px 12px}
+  .timer{background:var(--panel-soft);border:1px solid var(--stroke);border-radius:var(--radius);padding:12px 18px;text-align:center}
+  .minimap{width:150px;height:150px;background:var(--black);border:1px solid var(--stroke);border-radius:var(--radius);position:relative}
+  .minimap .dot{position:absolute;width:10px;height:10px;border-radius:50%;background:var(--amber);left:50%;top:50%}
+  .hud-body{flex:1;position:relative}
+  .joystick{position:absolute;left:10px;bottom:10px;width:120px;height:120px;border-radius:50%;background:rgba(11,12,10,.6);border:1px solid var(--stroke)}
+  .joystick::after{content:"";position:absolute;width:52px;height:52px;border-radius:50%;background:var(--panel-soft);border:1px solid var(--stroke);left:50%;top:50%;transform:translate(-50%,-50%)}
+  .actions{position:absolute;right:10px;bottom:10px;display:flex;align-items:flex-end;gap:12px}
+  .act{border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid var(--stroke);cursor:pointer;transition:transform .12s}
+  .act:active{transform:scale(.94)}
+  .act.big{width:84px;height:84px;background:#4A3816;border-color:var(--amber)}
+  .act.small{width:60px;height:60px;background:var(--panel-soft)}
+  .objective{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);background:var(--panel-soft);border:1px solid var(--stroke);border-radius:var(--radius-sm);padding:10px 18px;font-size:14px;color:var(--white)}
+
+  /* 成员岗位台 */
+  .crew-body{flex:1;display:grid;grid-template-columns:210px 1fr 240px;gap:12px;min-height:0}
+  .cat{display:flex;flex-direction:column;gap:10px}
+  .cat .item{background:var(--panel-soft);border:1px solid var(--stroke);border-radius:var(--radius-sm);padding:14px 16px;cursor:pointer}
+  .cat .item.on{border-color:var(--amber);color:var(--amber)}
+  .workspace{display:flex;flex-direction:column;gap:14px;align-items:center;justify-content:center}
+  .core{width:200px;height:150px;background:var(--panel-soft);border:1px solid var(--amber);border-radius:var(--radius);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+  .slots{display:grid;grid-template-columns:repeat(4,96px);gap:14px}
+  .slot{width:96px;height:96px;border:1px dashed var(--stroke);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:30px}
+  .queue{display:flex;gap:12px}
+  .queue .q{padding:10px 14px;background:var(--panel-soft);border:1px solid var(--stroke);border-radius:var(--radius-sm);font-size:13px;color:var(--muted)}
+  .detail{display:flex;flex-direction:column;gap:10px}
+  .metric{background:var(--panel-soft);border:1px solid var(--stroke);border-radius:var(--radius-sm);padding:12px 14px}
+  .metric .line{display:flex;justify-content:space-between}
+
+  .notes{margin-top:30px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+  .note{background:var(--panel);border:1px solid var(--stroke);border-radius:var(--radius);padding:18px}
+  .note h3{font-size:15px;margin-bottom:8px;color:var(--amber)}
+  .note ul{padding-left:18px;color:var(--muted);font-size:14px}
+  .note li{margin:6px 0}
+  #toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%);background:var(--black);border:1px solid var(--amber);color:var(--white);padding:12px 20px;border-radius:var(--radius-sm);font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:99}
+  #toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>无限进化·末世生存 — 新版 UI 预览</h1>
+    <p>题材：俯视角末日生存，横屏 1334×750。方向：成熟废土手游风——暖炭灰底、琥珀金强调、低饱和苔青，弱化原有的高饱和霓虹描边；面板圆角加大、描边收敛，按钮带按压缩放反馈，状态条改为连续圆角填充。本页为静态示意，实际逻辑与数据绑定保留在 Cocos 工程内。</p>
+  </header>
+
+  <div class="swatches">
+    <div class="sw"><i style="background:#111312"></i>底 #111312</div>
+    <div class="sw"><i style="background:#1F2220"></i>面板 #1F2220</div>
+    <div class="sw"><i style="background:#2C302C"></i>次板 #2C302C</div>
+    <div class="sw"><i style="background:#D8A652"></i>琥珀 #D8A652</div>
+    <div class="sw"><i style="background:#68B4A8"></i>苔青 #68B4A8</div>
+    <div class="sw"><i style="background:#D68A42"></i>暖橙 #D68A42</div>
+    <div class="sw"><i style="background:#C65482"></i>玫红 #C65482</div>
+    <div class="sw"><i style="background:#C64A42"></i>砖红 #C64A42</div>
+    <div class="sw"><i style="background:#E9E6DC"></i>暖白 #E9E6DC</div>
+    <div class="sw"><i style="background:#979A90"></i>灰 #979A90</div>
+  </div>
+
+  <div class="gallery">
+    <!-- ===== 界面一：基地整备 ===== -->
+    <section class="mock">
+      <h2>基地整备 <span>HallViewComp · 方舟车库</span></h2>
+      <div class="screen">
+        <div class="hall-top">
+          <div class="chap">
+            <div class="badge">01</div>
+            <div><div class="title">灰港废城</div><div class="sub">03 黄昏整备</div></div>
+          </div>
+          <div class="res">
+            <div><div class="sub">废料</div><div class="num">368</div></div>
+            <div><div class="sub">合金</div><div class="num">72</div></div>
+            <div><div class="sub">能源</div><div class="num">11</div></div>
+          </div>
+        </div>
+
+        <div class="hall-body">
+          <div class="col">
+            <div class="plate">
+              <div class="title" style="margin-bottom:10px">方舟状态</div>
+              <div class="status-mod">
+                <div class="line"><span class="sub">核心耐久</span><span class="num">827/1000</span></div>
+                <div class="bar"><i style="width:83%;background:var(--teal)"></i></div>
+              </div>
+              <div class="status-mod" style="margin-top:10px">
+                <div class="line"><span class="sub">能源负载</span><span class="num">6/18</span></div>
+                <div class="bar"><i style="width:33%;background:var(--orange)"></i></div>
+              </div>
+            </div>
+            <div class="plate">
+              <div class="sub">可用模块槽</div>
+              <div class="num" style="margin:4px 0">3 / 7</div>
+              <div class="bar"><i style="width:43%;background:var(--teal)"></i></div>
+            </div>
+          </div>
+
+          <div class="hero">
+            <div class="title">移动方舟 · 改装运输车</div>
+            <div class="art"></div>
+            <div class="plate" style="width:70%;text-align:center">
+              <div class="tag">灰港旧城区 · 高危</div>
+              <div class="sub" style="margin-top:4px">废料 / 零件 / 补给箱</div>
+            </div>
+          </div>
+
+          <div class="col">
+            <div class="threat-head">
+              <svg class="ic" viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm0 6l4 7h-8l4-7z"/></svg>
+              <div class="title">次夜尸潮</div>
+            </div>
+            <div class="hazard">
+              <div class="warn">▲ WARNING ▲</div>
+              <div class="num" style="margin:8px 0 4px">中等</div>
+              <div class="sub">奔袭者 / 巨力怪</div>
+            </div>
+            <div class="countdown">
+              <div class="sub">尸潮抵达</div>
+              <div class="num" style="color:var(--danger);margin-top:4px">03:42</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hall-nav">
+          <div class="nav"><svg class="ic" viewBox="0 0 24 24"><path d="M4 7h16v13H4z"/></svg><small>装备</small></div>
+          <div class="nav"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/></svg><small>工坊</small></div>
+          <div class="nav"><svg class="ic" viewBox="0 0 24 24"><path d="M3 21h18M5 21V8l7-5 7 5v13"/></svg><small>建设</small></div>
+          <div class="nav"><svg class="ic" viewBox="0 0 24 24"><path d="M9 3h6v6l4 9H5l4-9z"/></svg><small>研究</small></div>
+          <div class="nav"><svg class="ic" viewBox="0 0 24 24"><path d="M16 11a4 4 0 10-8 0 4 4 0 008 0zM2 21a10 10 0 0120 0"/></svg><small>成员</small></div>
+          <div class="nav"><svg class="ic" viewBox="0 0 24 24"><path d="M3 11l18-7-7 18-3-8-8-3z"/></svg><small>情报</small></div>
+          <button class="btn btn-primary demo-btn">出发探索 ›</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 界面二：战斗 HUD ===== -->
+    <section class="mock">
+      <h2>战斗 HUD <span>BattleHUDViewComp · 探索行动</span></h2>
+      <div class="screen">
+        <div class="hud-top">
+          <div class="status-stack">
+            <div class="plate">
+              <div class="line" style="display:flex;justify-content:space-between"><span class="sub">生命</span><span class="sub">690/690</span></div>
+              <div class="bar"><i style="width:100%;background:var(--danger)"></i></div>
+              <div class="line" style="display:flex;justify-content:space-between;margin-top:8px"><span class="sub">护盾</span><span class="sub">266/295</span></div>
+              <div class="bar"><i style="width:90%;background:var(--teal)"></i></div>
+              <div class="line" style="display:flex;justify-content:space-between;margin-top:8px"><span class="sub">污染</span><span class="sub">32/100</span></div>
+              <div class="bar"><i style="width:32%;background:var(--magenta)"></i></div>
+            </div>
+            <div class="weapon">
+              <div><div class="title">灰港制式步枪</div><div class="sub" style="margin-top:2px">弹匣 21/24 · 武器就绪</div></div>
+              <button class="btn demo-btn" style="min-height:56px">换枪</button>
+            </div>
+          </div>
+
+          <div class="timer">
+            <div class="num">08:00</div>
+            <div class="tag">安全探索</div>
+            <div class="bar" style="width:220px;margin:8px auto 0"><i style="width:72%;background:var(--orange)"></i></div>
+          </div>
+
+          <div class="minimap"><div class="dot"></div><div class="sub" style="position:absolute;bottom:10px;left:0;right:0;text-align:center">目标 4041m</div></div>
+        </div>
+
+        <div class="hud-body">
+          <div class="joystick"></div>
+          <div class="objective">当前目标：回收建造材料 · 物资仓库 ｜ 点击地面寻路</div>
+          <div class="actions">
+            <div class="act small demo-btn"><svg class="ic" style="fill:var(--white)" viewBox="0 0 24 24"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg></div>
+            <div class="act big demo-btn"><svg class="ic" style="fill:var(--amber)" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 5l3 5-3 5-3-5 3-5z"/></svg></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 界面三：成员岗位台 ===== -->
+    <section class="mock">
+      <h2>成员岗位台 <span>FeaturePageViewComp · Crew</span></h2>
+      <div class="screen">
+        <div class="hall-top">
+          <button class="btn demo-btn">‹ 返回方舟</button>
+          <div class="title">成员与岗位</div>
+          <div style="width:120px"></div>
+        </div>
+
+        <div class="crew-body">
+          <div class="cat">
+            <div class="sub" style="padding:0 4px">功能分类</div>
+            <div class="item on">全体</div>
+            <div class="item">岗位</div>
+            <div class="item">伤病</div>
+            <div class="item">任务</div>
+          </div>
+
+          <div class="workspace">
+            <div class="core">
+              <svg class="ic" style="width:44px;height:44px" viewBox="0 0 24 24"><path d="M16 11a4 4 0 10-8 0 4 4 0 008 0zM2 21a10 10 0 0120 0"/></svg>
+              <div class="tag">成员与岗位</div>
+            </div>
+            <div class="slots">
+              <div class="slot">+</div><div class="slot">+</div><div class="slot">+</div><div class="slot">+</div>
+            </div>
+            <div class="queue">
+              <div class="q">进行中 00:18</div>
+              <div class="q">空队列</div>
+              <div class="q">空队列</div>
+            </div>
+          </div>
+
+          <div class="detail">
+            <div class="sub" style="padding:0 4px">状态预览</div>
+            <div class="metric"><div class="line"><span class="sub">士气</span><span class="num">78</span></div></div>
+            <div class="metric"><div class="line"><span class="sub">疲劳</span><span class="num">34</span></div></div>
+            <div class="metric"><div class="line"><span class="sub">伤病</span><span class="num">0</span></div></div>
+            <button class="btn btn-primary demo-btn" style="margin-top:auto">确认岗位</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="notes">
+    <div class="note">
+      <h3>配色与材质</h3>
+      <ul>
+        <li>底色由冷蓝黑改为暖炭灰，面板去霓虹青描边，统一细描边与 14px 圆角。</li>
+        <li>强调色收敛为琥珀金；护盾/安全用低饱和苔青，危险保留砖红，追猎用降饱和玫红。</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h3>交互反馈</h3>
+      <ul>
+        <li>所有可点按钮挂按压缩放（0.96）与提亮反馈，抬起/取消还原。</li>
+        <li>状态条由分段硬色块改为连续圆角填充，读数层级更清晰。</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h3>落地范围</h3>
+      <ul>
+        <li>公共主题层 UITheme、组件层 UIBuilder 已重构；基地、战斗 HUD、成员台及其他功能页底色统一。</li>
+        <li>节点名、资源路径与数据绑定保持不变，现有 315 个测试全部通过。</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div id="toast">演示占位，实际操作逻辑在 Cocos 工程内</div>
+<script>
+  var toast = document.getElementById('toast');
+  var timer = null;
+  document.querySelectorAll('.demo-btn, .nav, .item, .act').forEach(function(el){
+    el.addEventListener('click', function(){
+      toast.classList.add('show');
+      clearTimeout(timer);
+      timer = setTimeout(function(){ toast.classList.remove('show'); }, 1400);
+    });
+  });
+</script>
+</body>
+</html>

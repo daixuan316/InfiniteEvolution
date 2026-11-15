@@ -1,0 +1,35 @@
+#///////////////////////////
+# Cocos Creator 3D Project
+#///////////////////////////
+oops-plugin-framework/
+oops-plugin-hot-update/
+oops-plugin-excel-to-json/
+oops_framework_remote/
+library/
+temp/
+local/
+build/
+profiles/
+native
+#//////////////////////////
+# NPM
+#//////////////////////////
+# node_modules/
+
+#//////////////////////////
+# VSCode
+#//////////////////////////
+.vscode/
+
+#//////////////////////////
+# WebStorm
+#//////////////////////////
+.idea/
+
+# Local visual brainstorming sessions
+.superpowers/
+
+#//////////////////////////
+# Codex CLI local scratch (auto-saves, temp import scripts, signed URLs)
+#//////////////////////////
+.codely-cli/

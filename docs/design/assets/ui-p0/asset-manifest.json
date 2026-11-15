@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "libraryId": "infinite-evolution-ui-p0-v1",
+  "generatedAt": "2026-11-03",
+  "sourceTool": "Codex built-in image generation",
+  "engine": "Cocos Creator 3.8.8",
+  "combinedPreview": "previews/ui-p0-all-preview.png",
+  "styleReferences": [
+    "../ui-main-gameplay-topdown-v1.png",
+    "../ui-icons/source-sheets/01-hud-combat.png",
+    "../ui-mockups/02-night-defense-rooftop.png"
+  ],
+  "format": {
+    "sourceGrid": "4x4 row-major",
+    "individualWidth": 256,
+    "individualHeight": 256,
+    "colorMode": "RGBA",
+    "transparent": true,
+    "runtimeRoot": "../../../../assets/bundle/gui/ui-p0/texture"
+  },
+  "groups": [
+    {
+      "id": "common",
+      "sourceSheet": "source-sheets/01-common-components.png",
+      "preview": "previews/common-preview.png",
+      "assets": [
+        "panel-large", "panel-medium", "card-compact", "tooltip",
+        "button-primary", "button-secondary", "button-warning", "button-danger",
+        "tab-inactive", "tab-selected", "slot-empty", "slot-selected",
+        "bar-status", "bar-segmented", "slider", "toggle-pair"
+      ]
+    },
+    {
+      "id": "exploration-hud",
+      "sourceSheet": "source-sheets/02-exploration-hud.png",
+      "preview": "previews/exploration-hud-preview.png",
+      "assets": [
+        "player-health-frame", "shield-frame", "injury-frame", "pollution-frame",
+        "day-timer-frame", "target-health-frame", "weapon-status-plate", "backpack-capacity-plate",
+        "minimap-bezel", "objective-distance-plate", "ark-distance-plate", "pickup-notification-card",
+        "enemy-health-frame", "elite-health-frame", "boss-health-frame", "offscreen-direction-marker"
+      ]
+    },
+    {
+      "id": "touch-tutorial",
+      "sourceSheet": "source-sheets/03-touch-tutorial.png",
+      "preview": "previews/touch-tutorial-preview.png",
+      "assets": [
+        "joystick-base", "joystick-thumb", "action-button-large", "action-button-medium",
+        "button-pressed", "button-disabled", "cooldown-overlay", "charge-progress-ring",
+        "tutorial-tap-hand", "tutorial-swipe-path", "tutorial-drag-handle", "tutorial-spotlight-brackets",
+        "warning-triangle", "critical-edge-corner", "alert-chevrons", "countdown-badge-plate"
+      ]
+    },
+    {
+      "id": "defense-hud",
+      "sourceSheet": "source-sheets/04-defense-hud.png",
+      "preview": "previews/defense-hud-preview.png",
+      "assets": [
+        "ark-core-frame", "horde-wave-frame", "threat-density-frame", "damaged-module-row",
+        "emergency-action-button", "active-facility-button", "remote-repair-plate", "power-priority-selector",
+        "module-durability-frame", "module-damage-badge", "repair-progress-ring", "defense-breach-indicator",
+        "incoming-wave-banner", "respite-banner", "boss-phase-emblem", "ark-critical-edge-overlay"
+      ]
+    }
+  ],
+  "runtimeRules": {
+    "textAndNumbers": "code-native",
+    "icons": "layer existing ui-icons above empty plates",
+    "progressFills": "code-native Sprite fill or mask below frame",
+    "nineSliceCandidates": [
+      "panel-large", "panel-medium", "card-compact", "tooltip",
+      "button-primary", "button-secondary", "button-warning", "button-danger",
+      "damaged-module-row", "remote-repair-plate", "incoming-wave-banner", "respite-banner"
+    ],
+    "filtering": "nearest",
+    "mipmaps": false,
+    "compression": "lossless-or-high-quality-ui"
+  },
+  "provenance": {
+    "sourceType": "ai-generated",
+    "normalization": "deterministic 4x4 slicing to 256x256 RGBA plus connected edge-fragment cleanup",
+    "reviewStatus": "internal-visual-validation",
+    "commercialReleaseReviewRequired": true
+  }
+}

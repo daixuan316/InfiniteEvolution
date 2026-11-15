@@ -1,0 +1,66 @@
+﻿{
+    "schemaVersion":  1,
+    "generatedAt":  "2026-11-10",
+    "sourceTool":  "OpenAI built-in image generation and deterministic PowerShell slicing",
+    "ids":  [
+                "supply-crate",
+                "armory-crate",
+                "bio-crate",
+                "heavy-safe",
+                "airdrop-crate",
+                "hidden-cache",
+                "weapon-case",
+                "medical-cabinet",
+                "scrap-pile",
+                "alloy-stack",
+                "electronics-cache",
+                "energy-cell-crate",
+                "fuel-drum",
+                "ration-box",
+                "blueprint-tube",
+                "mutation-pod"
+            ],
+    "states":  [
+                   "closed",
+                   "opening",
+                   "opened"
+               ],
+    "effects":  [
+                    "interaction-gold-ring",
+                    "technology-cyan-ring",
+                    "pollution-magenta-ring",
+                    "rare-white-gold-star",
+                    "opening-radial-flash",
+                    "diamond-particles",
+                    "reward-upward-trail",
+                    "completed-soft-glow"
+                ],
+    "formats":  {
+                    "world":  {
+                                  "width":  256,
+                                  "height":  256,
+                                  "colorMode":  "RGBA",
+                                  "transparent":  true
+                              },
+                    "icons":  {
+                                  "width":  128,
+                                  "height":  128,
+                                  "colorMode":  "RGBA",
+                                  "transparent":  true
+                              },
+                    "effects":  {
+                                    "width":  256,
+                                    "height":  256,
+                                    "colorMode":  "RGBA",
+                                    "transparent":  true
+                                }
+                },
+    "runtimeRoot":  "assets/bundle/gui/loot-chests",
+    "sourceRoot":  "docs/design/assets/loot-chests/source-sheets",
+    "ordering":  "row-major",
+    "provenance":  {
+                       "sourceType":  "ai-generated-and-derived",
+                       "reviewStatus":  "internal-visual-validation",
+                       "commercialReleaseReviewRequired":  true
+                   }
+}

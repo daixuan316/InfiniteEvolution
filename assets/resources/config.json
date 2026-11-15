@@ -1,0 +1,74 @@
+{
+    "type": "dev",
+    "config": {
+        "dev": {
+            "version": "1.0.0",
+            "package": "com.infinite.evolution.doomsday",
+            "localDataKey": "ieds",
+            "localDataIv": "survival",
+            "frameRate": 60,
+            "loadingTimeoutGui": 1000,
+            "mobileSafeArea": false,
+            "stats": true,
+            "httpServer": "",
+            "httpTimeout": 10000,
+            "webSocketServer": "",
+            "webSocketHeartTime": 6000,
+            "webSocketReceiveTime": 10000,
+            "webSocketReconnetTimeOut": 3000
+        },
+        "test": {
+            "version": "1.0.0",
+            "package": "com.infinite.evolution.doomsday",
+            "localDataKey": "ieds",
+            "localDataIv": "survival",
+            "frameRate": 60,
+            "loadingTimeoutGui": 1000,
+            "mobileSafeArea": false,
+            "stats": false,
+            "httpServer": "",
+            "httpTimeout": 10000,
+            "webSocketServer": "",
+            "webSocketHeartTime": 6000,
+            "webSocketReceiveTime": 10000,
+            "webSocketReconnetTimeOut": 3000
+        },
+        "prod": {
+            "version": "1.0.0",
+            "package": "com.infinite.evolution.doomsday",
+            "localDataKey": "ieds",
+            "localDataIv": "survival",
+            "frameRate": 60,
+            "loadingTimeoutGui": 1000,
+            "mobileSafeArea": false,
+            "stats": false,
+            "httpServer": "",
+            "httpTimeout": 10000,
+            "webSocketServer": "",
+            "webSocketHeartTime": 6000,
+            "webSocketReceiveTime": 10000,
+            "webSocketReconnetTimeOut": 3000
+        }
+    },
+    "gui": [
+        { "name": "LayerGame", "type": "Game" },
+        { "name": "LayerUI", "type": "UI" },
+        { "name": "LayerPopUp", "type": "PopUp" },
+        { "name": "LayerDialog", "type": "Dialog" },
+        { "name": "LayerSystem", "type": "Dialog" },
+        { "name": "LayerNotify", "type": "Notify" },
+        { "name": "LayerGuide", "type": "Node" }
+    ],
+    "language": {
+        "default": "zh",
+        "type": ["zh", "en"],
+        "path": {
+            "json": "language/json",
+            "texture": "language/texture",
+            "spine": ""
+        }
+    },
+    "bundle": {
+        "default": "bundle"
+    }
+}
